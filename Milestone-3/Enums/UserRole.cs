@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+namespace CampusX.Enums;
 
-namespace CampusX.Enums
+public enum UserRole
 {
-    public enum UserRole
-    {
-        Student,
-        Admin
-    }
+    Student,
+    Admin
 }
