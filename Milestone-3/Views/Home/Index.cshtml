@@ -1,5 +1,65 @@
+@model CampusX.ViewModels.HomeIndexViewModel
+
 @{
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = Model.Heading;
+    var categories = Model.Products.Select(product => product.CategoryName)
+        .Where(category => !string.IsNullOrWhiteSpace(category))
+        .Distinct()
+        .Take(6);
 }
-<h1>CampusX</h1>
-<p>MVC project scaffold.</p>
+
+<section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+        <span class="hero-eyebrow"><span aria-hidden="true">✦</span> THE CAMPUS MARKETPLACE</span>
+        <h1 id="hero-title">Discover Campus Deals</h1>
+        <p>Buy and sell study essentials with students like you.</p>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+        <div class="hero-halo"></div>
+        <div class="campus-building">
+            <div class="building-roof"></div>
+            <div class="building-facade"><span></span><span></span><span></span><span></span><span></span></div>
+            <div class="building-steps"></div>
+        </div>
+    </div>
+</section>
+
+<section class="catalog" aria-labelledby="catalog-title">
+    <div class="catalog-heading">
+        <div>
+            <span class="section-eyebrow">EXPLORE CAMPUSX</span>
+            <h2 id="catalog-title">@Model.Heading</h2>
+            <p>@Model.Description</p>
+        </div>
+        <span class="product-count">@Model.Products.Count Available Products</span>
+    </div>
+
+    <div class="catalog-controls">
+        <div class="category-chips" aria-label="Category filters coming soon">
+            <span class="category-chip is-active">All products</span>
+            @foreach (var category in categories)
+            {
+                <span class="category-chip">@category</span>
+            }
+        </div>
+        <div class="sort-placeholder" aria-label="Sorting coming soon">Sort by <strong>Newest</strong><span aria-hidden="true">⌄</span><small>Coming soon</small></div>
+    </div>
+
+    @if (Model.Products.Count == 0)
+    {
+        <div class="empty-state" role="status">
+            <div class="empty-icon" aria-hidden="true">▦</div>
+            <h3>No products available yet</h3>
+            <p>Check back soon for new listings from students on campus.</p>
+        </div>
+    }
+    else
+    {
+        <div class="product-grid">
+            @foreach (var product in Model.Products)
+            {
+                <partial name="_ProductCard" model="product" />
+            }
+        </div>
+    }
+</section>

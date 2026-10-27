@@ -14,7 +14,7 @@ Use singular PascalCase for entity classes (`Product`), plural DbSet/table names
 
 ## Database setup
 
-The connection string is read from `ConnectionStrings:CampusXDb` in `appsettings.json`. The checked-in value uses a local SQL Server Express instance. Each developer can override it with the environment variable `ConnectionStrings__CampusXDb` or a local configuration provider; no machine name is compiled into the context.
+The connection string is read from `ConnectionStrings:CampusXDb` in `appsettings.json`. The checked-in value uses the local default SQL Server instance with Windows Authentication. Each developer can override it with the environment variable `ConnectionStrings__CampusXDb` or a local configuration provider; no machine name is compiled into the context.
 
 The original migration is retained so a database already created with it can receive the correction migration. In Visual Studio Package Manager Console, select the CampusX project and run `Update-Database` after setting a reachable connection string. The correction deliberately stops if existing accounts are present: the old schema did not store password hashes, so those accounts cannot be migrated into usable logins automatically. It also stops for invalid legacy product statuses/prices, ambiguous reports, or contact records whose seller disagrees with the product. Back up and resolve such data before applying the correction; do not drop the database to bypass the checks.
 
