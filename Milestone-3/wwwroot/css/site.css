@@ -212,3 +212,72 @@ a.sidebar-link:hover { background: #dcefe3; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* Custom Add Product Styling & Smooth Transitions */
+.add-product-card {
+    max-width: 750px;
+    margin: 40px auto;
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+    .add-product-card:hover {
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.07);
+    }
+
+.form-control-custom {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e1e4e8;
+    border-radius: 10px;
+    font-size: 14px;
+    background-color: #fafbfc;
+    transition: all 0.25s ease-in-out;
+    outline: none;
+}
+
+    .form-control-custom:focus {
+        border-color: #0f5132;
+        background-color: #fff;
+        box-shadow: 0 0 0 4px rgba(15, 81, 50, 0.1);
+    }
+
+.btn-save-custom {
+    padding: 12px 28px;
+    background: #0f5132;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(15, 81, 50, 0.2);
+}
+
+    .btn-save-custom:hover {
+        background: #146c43;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 15px rgba(15, 81, 50, 0.3);
+    }
+
+.btn-cancel-custom {
+    padding: 12px 24px;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    color: #57606a;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    background: #f6f8fa;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+    .btn-cancel-custom:hover {
+        background: #eee;
+        color: #24292f;
+    }

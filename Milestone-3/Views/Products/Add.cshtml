@@ -1,0 +1,51 @@
+﻿@model CampusX.ViewModel.AddProductViewModel
+
+@{
+    ViewData["Title"] = "Add New Product";
+}
+
+<div class="add-product-card">
+    <h2 style="font-size: 26px; font-weight: 700; color: #111; margin-bottom: 8px;">Add New Product</h2>
+    <p style="color: #656d76; font-size: 14px; margin-bottom: 28px;">List your study essentials, books, or tech gear for students on campus.</p>
+
+    <form asp-action="Add" method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" style="color: #cf222e; margin-bottom: 20px; font-size: 13px;"></div>
+
+        <div style="margin-bottom: 22px;">
+            <label asp-for="Name" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
+            <input asp-for="Name" class="form-control-custom" placeholder="e.g. Data Structures Textbook" />
+            <span asp-validation-for="Name" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+        </div>
+
+        <div style="margin-bottom: 22px;">
+            <label asp-for="Description" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
+            <textarea asp-for="Description" class="form-control-custom" rows="4" placeholder="Describe the condition, edition, or details..."></textarea>
+            <span asp-validation-for="Description" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+        </div>
+
+        <div style="display: flex; gap: 20px; margin-bottom: 22px;">
+            <div style="flex: 1;">
+                <label asp-for="Price" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
+                <input asp-for="Price" class="form-control-custom" placeholder="0.00 EGP" />
+                <span asp-validation-for="Price" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+            </div>
+
+            <div style="flex: 1;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;">Category</label>
+                <input asp-for="Category" class="form-control-custom" placeholder="e.g. Books, Electronics" />
+                <span asp-validation-for="Category" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 32px;">
+            <label asp-for="ImageFile" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
+            <input asp-for="ImageFile" type="file" class="form-control-custom" style="padding: 10px; background: #fff;" />
+            <span asp-validation-for="ImageFile" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #eaecef; padding-top: 24px;">
+            <a asp-controller="Home" asp-action="Index" class="btn-cancel-custom">Cancel</a>
+            <button type="submit" class="btn-save-custom">Save Product</button>
+        </div>
+    </form>
+</div>
