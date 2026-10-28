@@ -9,17 +9,38 @@
         else
         {
             <div class="product-image-placeholder" role="img" aria-label="Image unavailable for @Model.Name">
-                <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 19h33a7 7 0 0 1 7 7v36H24a7 7 0 0 0-7 7V19Z"/><path d="M57 62h7V33a7 7 0 0 0-7-7M17 69a7 7 0 0 1 7-7h40"/><path d="M26 31h21M26 39h17"/></svg>
+                <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 19h33a7 7 0 0 1 7 7v36H24a7 7 0 0 0-7 7V19Z" /><path d="M57 62h7V33a7 7 0 0 0-7-7M17 69a7 7 0 0 1 7-7h40" /><path d="M26 31h21M26 39h17" /></svg>
                 <span>CampusX listing</span>
             </div>
         }
     </div>
+    
     <div class="product-body">
-        <span class="product-category">@Model.CategoryName</span>
+        <!-- عرض الـ Category واسم الكلية بجوار بعضهما كـ Badges أنيقة -->
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px;">
+            <span class="product-category">@Model.CategoryName</span>
+            @if (!string.IsNullOrEmpty(Model.College))
+            {
+                <span class="product-category" style="background-color: #f1f8ff; color: #0969da; border: 1px solid #c8e1ff;">@Model.College</span>
+            }
+        </div>
+
         <h3 class="product-name">@Model.Name</h3>
         <p class="product-description">@Model.Description</p>
-        <div class="product-price">@Model.Price.ToString("N2") <span>EGP</span></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <div class="product-price">@Model.Price.ToString("N2") <span>EGP</span></div>
+            
+            <!-- عرض رقم التليفون كزر اتصال أو نص واضح -->
+            @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+            {
+                <a href="tel:@Model.PhoneNumber" style="font-size: 13px; color: #1f883d; text-decoration: none; font-weight: 600; background: #dafbe1; padding: 4px 8px; border-radius: 6px;" title="Call Seller">
+                    📞 @Model.PhoneNumber
+                </a>
+            }
+        </div>
     </div>
+
     <div class="product-meta">
         <span class="seller-name"><span class="seller-dot" aria-hidden="true"></span>@Model.SellerName</span>
         <time datetime="@Model.CreatedAt.ToString("O")">@Model.CreatedAt.ToString("dd MMM yyyy")</time>

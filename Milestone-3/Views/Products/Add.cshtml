@@ -11,36 +11,76 @@
     <form asp-action="Add" method="post" enctype="multipart/form-data">
         <div asp-validation-summary="ModelOnly" style="color: #cf222e; margin-bottom: 20px; font-size: 13px;"></div>
 
-        <div style="margin-bottom: 22px;">
-            <label asp-for="Name" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
-            <input asp-for="Name" class="form-control-custom" placeholder="e.g. Data Structures Textbook" />
-            <span asp-validation-for="Name" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
-        </div>
-
-        <div style="margin-bottom: 22px;">
-            <label asp-for="Description" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
-            <textarea asp-for="Description" class="form-control-custom" rows="4" placeholder="Describe the condition, edition, or details..."></textarea>
-            <span asp-validation-for="Description" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
-        </div>
-
+        <!-- السطر الأول: الاسم (شمال) والسعر (يمين) -->
         <div style="display: flex; gap: 20px; margin-bottom: 22px;">
+            <div style="flex: 2;">
+                <label asp-for="Name" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
+                <input asp-for="Name" class="form-control-custom" placeholder="e.g. Data Structures Textbook" />
+                <span asp-validation-for="Name" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+            </div>
+
             <div style="flex: 1;">
                 <label asp-for="Price" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
                 <input asp-for="Price" class="form-control-custom" placeholder="0.00 EGP" />
                 <span asp-validation-for="Price" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
             </div>
+        </div>
+
+        <!-- السطر الثاني: الكلية (اختيارية) والكاتيجوري (تتفلتر ديناميكياً حسب الكلية) -->
+        <div style="display: flex; gap: 20px; margin-bottom: 22px;">
+            <div style="flex: 1;">
+                <label asp-for="College" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;">College (Optional)</label>
+                <select asp-for="College" id="collegeSelect" class="form-control-custom">
+                    <option value="">Select College (Optional)...</option>
+                    <option value="Medicine">Medicine (طب بشري)</option>
+                    <option value="Dentistry">Dentistry (طب أسنان)</option>
+                    <option value="Pharmacy">Pharmacy (صيدلة)</option>
+                    <option value="Engineering">Engineering (هندسة)</option>
+                    <option value="Science">Science (علوم)</option>
+                </select>
+                <span asp-validation-for="College" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+            </div>
 
             <div style="flex: 1;">
-                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;">Category</label>
-                <input asp-for="Category" class="form-control-custom" placeholder="e.g. Books, Electronics" />
+                <label asp-for="Category" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;">Category</label>
+                <select asp-for="Category" id="categorySelect" class="form-control-custom">
+                    <option value="">-- Select Category --</option>
+                </select>
                 <span asp-validation-for="Category" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
             </div>
         </div>
 
-        <div style="margin-bottom: 32px;">
+        <!-- السطر الثالث: رقم الهاتف للتواصل (بشرط 11 رقم وأرقام مصرية صحيحة) -->
+        <div style="margin-bottom: 22px;">
+            <label asp-for="PhoneNumber" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;">Contact Phone Number</label>
+            <input asp-for="PhoneNumber" class="form-control-custom" placeholder="e.g. 01012345678 (010, 011, 012, 015)" />
+            <span asp-validation-for="PhoneNumber" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+        </div>
+
+        <!-- السطر الرابع: إضافة صورة المنتج -->
+        <div style="margin-bottom: 22px;">
             <label asp-for="ImageFile" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
-            <input asp-for="ImageFile" type="file" class="form-control-custom" style="padding: 10px; background: #fff;" />
+            
+            <div style="display: flex; align-items: center; border: 1px solid #d0d7de; border-radius: 6px; background: #fff; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);">
+                <label for="customFile" style="background: #f6f8fa; color: #24292f; padding: 10px 16px; font-weight: 500; font-size: 14px; border-right: 1px solid #d0d7de; cursor: pointer; margin-bottom: 0;">
+                    Browse...
+                </label>
+                <input asp-for="ImageFile" id="customFile" type="file" style="display: none;" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0] ? this.files[0].name : 'No file chosen';" />
+                <span id="fileNameDisplay" style="padding: 0 14px; color: #57606a; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    No file chosen
+                </span>
+            </div>
             <span asp-validation-for="ImageFile" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+        </div>
+
+        <!-- السطر الأخير: الوصف مع حد أقصى 300 حرف ووضوح تام -->
+        <div style="margin-bottom: 32px;">
+            <label asp-for="Description" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
+            <textarea asp-for="Description" id="productDescription" class="form-control-custom" rows="4" maxlength="300" placeholder="Describe the condition, edition, or details (max 300 characters)..." style="font-size: 14px; line-height: 1.5; padding: 10px;"></textarea>
+            <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+                <span asp-validation-for="Description" style="color: #cf222e; font-size: 12px;"></span>
+                <small id="charCount" style="color: #656d76; font-size: 12px; margin-left: auto;">0 / 300 characters</small>
+            </div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #eaecef; padding-top: 24px;">
@@ -49,3 +89,63 @@
         </div>
     </form>
 </div>
+
+@section Scripts {
+    <script>
+        // خريطة الأدوات لكل كلية
+        const categoriesByCollege = {
+            "Medicine": ["Medical Books", "Stethoscope", "Surgical Kit", "Lab Coat", "Anatomy Models"],
+            "Dentistry": ["Dental Instruments", "Dental Textbooks", "Typodont", "Dental Mirror & Explorer"],
+            "Pharmacy": ["Pharmacy Books", "Lab Equipment", "White Coat", "Pharmacology Guides"],
+            "Engineering": ["Engineering Kit", "Calculators", "Drawing Tools & Board", "Laptop / Tech Gear", "Textbooks"],
+            "Science": ["Scientific Calculator", "Lab Coat & Safety Glasses", "Science Textbooks", "Dissection Kit"]
+        };
+
+        const collegeSelect = document.getElementById("collegeSelect");
+        const categorySelect = document.getElementById("categorySelect");
+
+        function updateCategories() {
+            const selectedCollege = collegeSelect.value;
+            categorySelect.innerHTML = '<option value="">-- Select Category --</option>';
+
+            let availableCategories = [];
+
+            if (selectedCollege && categoriesByCollege[selectedCollege]) {
+                // لو اختار كلية معينة، نجيب أدواتها بس
+                availableCategories = categoriesByCollege[selectedCollege];
+            } else {
+                // لو مخترش كلية (فاضية)، نجيب كل أدوات جميع الكليات بدون تكرار
+                let allCatsSet = new Set();
+                for (let college in categoriesByCollege) {
+                    categoriesByCollege[college].forEach(cat => allCatsSet.add(cat));
+                }
+                availableCategories = Array.from(allCatsSet);
+            }
+
+            availableCategories.forEach(category => {
+                const option = document.createElement("option");
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        // تشغيل الفلترة أول ما الصفحة تفتح
+        updateCategories();
+
+        // تحديث الأقسام فور تغيير اختيار الكلية
+        collegeSelect.addEventListener("change", updateCategories);
+
+        // عداد الحروف للوصف
+        const descInput = document.getElementById("productDescription");
+        const charCount = document.getElementById("charCount");
+
+        function updateCharCount() {
+            const currentLength = descInput.value.length;
+            charCount.textContent = currentLength + " / 300 characters";
+        }
+
+        descInput.addEventListener("input", updateCharCount);
+        updateCharCount();
+    </script>
+}

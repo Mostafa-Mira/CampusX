@@ -65,5 +65,7 @@
         <main class="main-content" role="main">@RenderBody()</main>
     </div>
 
-    <footer class="site-footer"><span>© @DateTime.Now.Year CampusX</span><span>Made for campus life</span></footer></body>
+    <footer class="site-footer"><span>© @DateTime.Now.Year CampusX</span><span>Made for campus life</span></footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
 </html>

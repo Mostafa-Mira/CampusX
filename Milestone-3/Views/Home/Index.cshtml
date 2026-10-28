@@ -35,11 +35,12 @@
     </div>
 
     <div class="catalog-controls">
-        <div class="category-chips" aria-label="Category filters coming soon">
-            <span class="category-chip is-active">All products</span>
+        <!-- تم تحويل التابات إلى أزرار تفاعلية تعمل بالـ JavaScript -->
+        <div class="category-chips" aria-label="Category filters">
+            <button type="button" class="category-chip is-active" data-category="all" style="border:none; cursor:pointer; font:inherit;">All products</button>
             @foreach (var category in categories)
             {
-                <span class="category-chip">@category</span>
+                <button type="button" class="category-chip" data-category="@category" style="border:none; cursor:pointer; font:inherit;">@category</button>
             }
         </div>
         <div class="sort-placeholder" aria-label="Sorting coming soon">Sort by <strong>Newest</strong><span aria-hidden="true">⌄</span><small>Coming soon</small></div>
@@ -63,3 +64,31 @@
         </div>
     }
 </section>
+
+<!-- كود JavaScript لتفعيل تابات الفلترة أوتوماتيكياً -->
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+        var chips = document.querySelectorAll(".category-chip");
+        var cards = document.querySelectorAll(".product-card");
+
+        chips.forEach(function (chip) {
+            chip.addEventListener("click", function () {
+                chips.forEach(function (c) { c.classList.remove("is-active"); });
+                this.classList.add("is-active");
+
+                var target = this.getAttribute("data-category");
+
+                cards.forEach(function (card) {
+                    var catEl = card.querySelector(".product-category");
+                    var catText = catEl ? catEl.textContent.trim() : "";
+
+                    if (target === "all" || catText === target) {
+                        card.style.display = "block";
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+            });
+        });
+    });
+</script>

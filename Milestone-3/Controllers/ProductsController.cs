@@ -67,22 +67,21 @@ namespace CampusX.Controllers
                         Email = "student@campusx.com",
                         CollegeName = "General"
                     };
-                    // تعيين كلمة مرور افتراضية باستخدام الـ Method الموجودة في الكلاس
                     defaultUser.SetPassword("Password123!");
 
                     _context.ApplicationUsers.Add(defaultUser);
                     await _context.SaveChangesAsync();
                 }
 
-                // التأكد من وجود قسم (Category) افتراضي أو جلبه
-                var defaultCategory = _context.Categories.FirstOrDefault();
+                // البحث عن القسم (Category) أو إنشاؤه افتراضياً بناءً على ما أدخله المستخدم
+                var category = _context.Categories.FirstOrDefault(c => c.Name == model.Category);
                 Guid categoryId;
-                if (defaultCategory == null)
+                if (category == null)
                 {
                     var newCategory = new Category
                     {
                         Id = Guid.NewGuid(),
-                        Name = "General"
+                        Name = model.Category ?? "General"
                     };
                     _context.Categories.Add(newCategory);
                     await _context.SaveChangesAsync();
@@ -90,16 +89,18 @@ namespace CampusX.Controllers
                 }
                 else
                 {
-                    categoryId = defaultCategory.Id;
+                    categoryId = category.Id;
                 }
 
-                // ربط الـ ViewModel مع كلاس Product لحفظه
+                // ربط الـ ViewModel مع كلاس Product لحفظه (مع وضع General لو الكلية فارغة)
                 var product = new Product
                 {
                     Name = model.Name,
                     Description = model.Description,
                     Price = model.Price,
                     CategoryId = categoryId,
+                    College = string.IsNullOrWhiteSpace(model.College) ? "General" : model.College, // التعديل هنا لضمان عدم حدوث خطأ Null
+                    PhoneNumber = model.PhoneNumber,
                     ImageUrl = !string.IsNullOrEmpty(uniqueFileName) ? "/images/products/" + uniqueFileName : string.Empty,
                     SellerId = defaultUser.Id
                 };
