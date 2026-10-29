@@ -1,27 +1,30 @@
 @model CampusX.ViewModels.ProductCardViewModel
 
 <article class="product-card">
-    <div class="product-media">
-        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
-        {
-            <img src="@Model.ImageUrl" alt="@Model.Name" loading="lazy" />
-        }
-        else
-        {
-            <div class="product-image-placeholder" role="img" aria-label="Image unavailable for @Model.Name">
-                <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 19h33a7 7 0 0 1 7 7v36H24a7 7 0 0 0-7 7V19Z"/><path d="M57 62h7V33a7 7 0 0 0-7-7M17 69a7 7 0 0 1 7-7h40"/><path d="M26 31h21M26 39h17"/></svg>
-                <span>CampusX listing</span>
-            </div>
-        }
-    </div>
-    <div class="product-body">
-        <span class="product-category">@Model.CategoryName</span>
-        <h3 class="product-name">@Model.Name</h3>
-        <p class="product-description">@Model.Description</p>
-        <div class="product-price">@Model.Price.ToString("N2") <span>EGP</span></div>
-    </div>
-    <div class="product-meta">
-        <span class="seller-name"><span class="seller-dot" aria-hidden="true"></span>@Model.SellerName</span>
-        <time datetime="@Model.CreatedAt.ToString("O")">@Model.CreatedAt.ToString("dd MMM yyyy")</time>
-    </div>
+    <a class="product-card-main-link" asp-controller="Home" asp-action="Details" asp-route-id="@Model.Id" aria-label="View details for @Model.Name">
+        <div class="product-media">
+            @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+            {
+                <img src="@Model.ImageUrl" alt="@Model.Name" loading="lazy" />
+            }
+            else
+            {
+                <div class="product-image-placeholder" role="img" aria-label="Image unavailable for @Model.Name">
+                    <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 19h33a7 7 0 0 1 7 7v36H24a7 7 0 0 0-7 7V19Z"/><path d="M57 62h7V33a7 7 0 0 0-7-7M17 69a7 7 0 0 1 7-7h40"/><path d="M26 31h21M26 39h17"/></svg>
+                    <span>CampusX listing</span>
+                </div>
+            }
+        </div>
+        <div class="product-body">
+            <span class="product-category">@Model.CategoryName</span>
+            <h3 class="product-name">@Model.Name</h3>
+            <p class="product-description">@Model.Description</p>
+            <div class="product-price">@Model.Price.ToString("N2") <span>EGP</span></div>
+        </div>
+        <div class="product-meta">
+            <span class="seller-name"><span class="seller-dot" aria-hidden="true"></span>@Model.SellerName</span>
+            <time datetime="@Model.CreatedAt.ToString("O")">@Model.CreatedAt.ToString("dd MMM yyyy")</time>
+        </div>
+    </a>
+    <a class="product-details-link" asp-controller="Home" asp-action="Details" asp-route-id="@Model.Id">View details <span aria-hidden="true">→</span></a>
 </article>

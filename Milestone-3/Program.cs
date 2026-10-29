@@ -1,4 +1,5 @@
 using CampusX.Data.DbContexts;
+using CampusX.Data.Development;
 using CampusX.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,6 +14,17 @@ builder.Services.AddScoped<ReportBL>();
 builder.Services.AddScoped<ContactInquiryBL>();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    DevelopmentTestDataSeeder.TrySeed(
+        scope.ServiceProvider.GetRequiredService<CampusXDbContext>(),
+        app.Configuration,
+        app.Environment,
+        scope.ServiceProvider.GetRequiredService<ILogger<Program>>());
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

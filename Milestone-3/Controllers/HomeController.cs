@@ -43,6 +43,31 @@ namespace CampusX.Controllers
             return View("Index", homeVM);
         }
 
+        public IActionResult Details(Guid id)
+        {
+            Product? product = _productBL.GetById(id);
+
+            if (product is null)
+                return NotFound();
+
+            ProductDetailsViewModel detailsVM = new ProductDetailsViewModel
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                CategoryName = product.Category?.Name ?? "Uncategorized",
+                Status = product.Status,
+                SellerName = product.Seller?.FullName ?? "Seller information unavailable",
+                SellerCollegeName = product.Seller?.CollegeName,
+                SellerEmail = product.Seller?.Email,
+                SellerPhoneNumber = product.Seller?.PhoneNumber
+            };
+
+            return View(detailsVM);
+        }
+
         public IActionResult Error() => View();
     }
 }
