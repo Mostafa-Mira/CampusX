@@ -15,6 +15,8 @@ namespace CampusX.Models
         public ProductStatus Status { get; set; } = ProductStatus.Available;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public string College { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
         public bool IsDeleted { get; set; } = false;
 
         // Foreign Keys

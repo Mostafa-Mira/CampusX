@@ -15,7 +15,7 @@
             </a>
 
             <form class="search-form" asp-controller="Home" asp-action="Index" method="get" role="search">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
                 <label class="visually-hidden" for="site-search">Search products</label>
                 <input id="site-search" type="search" name="searchTerm" placeholder="Search for books, tech, and more..." />
                 <button type="submit">Search</button>
@@ -23,10 +23,10 @@
 
             <div class="header-actions" aria-label="Account features coming soon">
                 <span class="header-icon" aria-label="Notifications coming soon" title="Notifications coming soon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path d="M10 21h4" /></svg>
                 </span>
                 <span class="profile-placeholder" aria-label="Profile coming soon" title="Profile coming soon">
-                    <span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.6-3.3 3-5 6.5-5s5.9 1.7 6.5 5"/></svg></span>
+                    <span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5.5 20c.6-3.3 3-5 6.5-5s5.9 1.7 6.5 5" /></svg></span>
                     <span class="profile-label">Profile <small>Coming soon</small></span>
                 </span>
             </div>
@@ -42,9 +42,9 @@
                     <div class="sidebar-section-label">NAVIGATION</div>
                     <nav aria-label="Product navigation">
                         <ul class="sidebar-nav">
-                            <li><a class="sidebar-link is-active" asp-controller="Home" asp-action="Index" aria-current="page"><span class="nav-icon" aria-hidden="true">▦</span> Browse Products</a></li>
+                            <li><a class="sidebar-link" asp-controller="Home" asp-action="Index"><span class="nav-icon" aria-hidden="true">▦</span> Browse Products</a></li>
                             <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">▤</span> My Products <small>Soon</small></span></li>
-                            <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">＋</span> Add Product <small>Soon</small></span></li>
+                            <li><a class="sidebar-link" asp-controller="Products" asp-action="Add"><span class="nav-icon" aria-hidden="true">＋</span> Add Product</a></li>
                             <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">♡</span> Favorites <small>Soon</small></span></li>
                         </ul>
                     </nav>
@@ -66,5 +66,6 @@
     </div>
 
     <footer class="site-footer"><span>© @DateTime.Now.Year CampusX</span><span>Made for campus life</span></footer>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
