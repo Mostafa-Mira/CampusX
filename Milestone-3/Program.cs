@@ -20,21 +20,20 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CampusXDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("SampleProductSeeder");
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
-        if (db.Database.CanConnect())
-        {
-            var pendingMigrations = db.Database.GetPendingMigrations().ToArray();
-            if (pendingMigrations.Length == 0)
-                SampleProductSeeder.Seed(db);
-            else
-                logger.LogWarning("Sample products were not seeded because the database has pending migrations. Apply them with dotnet ef database update.");
-        }
+        // In Development, create the database if needed and bring it up to the current schema.
+        db.Database.Migrate();
+        SampleProductSeeder.Seed(db);
     }
     catch (Exception exception)
     {
-        logger.LogWarning(exception, "Sample product seeding was skipped. Make sure the database is available and migrated.");
+        logger.LogCritical(exception,
+            "CampusX database initialization failed. Check that SQL Server is running and the CampusXDb connection string is valid.");
+        throw new InvalidOperationException(
+            "CampusX could not initialize its Development database. Verify SQL Server and the CampusXDb connection string.",
+            exception);
     }
 
     DevelopmentTestDataSeeder.TrySeed(

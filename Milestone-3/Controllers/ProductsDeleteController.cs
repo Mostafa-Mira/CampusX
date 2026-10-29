@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CampusX.Controllers;
 
-[Route("dev/sample-products")]
-public sealed class SampleProductsController : Controller
+[Route("dev/products")]
+public sealed class ProductsDeleteController : Controller
 {
     private readonly ProductBL _productBL;
     private readonly IWebHostEnvironment _environment;
 
-    public SampleProductsController(ProductBL productBL, IWebHostEnvironment environment)
+    public ProductsDeleteController(ProductBL productBL, IWebHostEnvironment environment)
     {
         _productBL = productBL;
         _environment = environment;
@@ -25,7 +25,7 @@ public sealed class SampleProductsController : Controller
         try
         {
             _productBL.DeleteById(id);
-            TempData["SampleProductMessage"] = $"Deleted sample product {id}.";
+            TempData["SampleProductMessage"] = "تم حذف المنتج بنجاح.";
         }
         catch (InvalidOperationException exception)
         {

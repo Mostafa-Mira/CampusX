@@ -1,4 +1,5 @@
 @model CampusX.ViewModels.ProductDetailsViewModel
+@inject IWebHostEnvironment Environment
 
 @{
     ViewData["Title"] = Model.Name;
@@ -30,6 +31,7 @@
             <h1 id="product-title">@Model.Name</h1>
             <p class="product-id">Listing ID: @Model.Id</p>
             <p class="details-price">@Model.Price.ToString("N2") <span>EGP</span></p>
+
             <div class="details-section"><h2>Description</h2><p class="details-description">@Model.Description</p></div>
 
             @if (!string.IsNullOrWhiteSpace(Model.College) || !string.IsNullOrWhiteSpace(Model.PhoneNumber))
@@ -77,13 +79,28 @@
                 </dl>
             </div>
 
-            #region Mostafa: Edit Product Button inside Details Card
-            <div style="margin-top: 25px; display: flex; justify-content: flex-end;">
-                <a asp-controller="Products" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary" style="background-color: #198754; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500;">
-                    <i class="fas fa-edit"></i> Edit Product
-                </a>
+            <div class="product-details-actions">
+                <a asp-controller="Products" asp-action="Edit" asp-route-id="@Model.Id" class="product-detail-action product-detail-edit">Edit Product</a>
+                @if (Environment.IsDevelopment())
+                {
+                    <button type="button" class="product-detail-action product-detail-delete" onclick="document.getElementById('delete-product-@Model.Id').showModal()">Delete product</button>
+                }
             </div>
-            #endregion
+
+            @if (Environment.IsDevelopment())
+            {
+                <dialog class="sample-delete-dialog" id="delete-product-@Model.Id" aria-labelledby="delete-title-@Model.Id" aria-describedby="delete-message-@Model.Id" dir="rtl">
+                    <div class="sample-delete-dialog-body">
+                        <span class="sample-delete-icon" aria-hidden="true">!</span>
+                        <h2 id="delete-title-@Model.Id">هل أنت متأكد؟</h2>
+                        <p id="delete-message-@Model.Id">لا يمكن استرجاع المنتج بعد الحذف.</p>
+                        <form asp-controller="ProductsDelete" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="sample-delete-actions">
+                            <button type="button" class="sample-delete-cancel" onclick="document.getElementById('delete-product-@Model.Id').close()">إلغاء</button>
+                            <button type="submit" class="sample-delete-confirm">نعم، احذف المنتج</button>
+                        </form>
+                    </div>
+                </dialog>
+            }
 
         </div>
     </div>

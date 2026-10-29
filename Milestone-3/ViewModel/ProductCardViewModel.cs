@@ -4,9 +4,7 @@
     {
         public Guid Id { get; set; }
 
-        public bool IsSample { get; set; }
-
-        public bool CanDeleteSample { get; set; }
+        public bool CanDelete { get; set; }
 
         public string Name { get; set; } = string.Empty;
 

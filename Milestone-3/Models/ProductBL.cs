@@ -1,5 +1,4 @@
 using CampusX.Data.DbContexts;
-using CampusX.Data.Seed;
 using CampusX.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -91,15 +90,12 @@ public class ProductBL
 
     public void DeleteById(Guid pid)
     {
-        if (!SampleProductSeeder.IsSampleProduct(pid))
-            throw new InvalidOperationException("ID غير مسموح.");
-
         var product = _context.Products.Find(pid);
 
-        if (product is null)
-            return;
+        if (product is null || product.IsDeleted)
+            throw new InvalidOperationException("المنتج غير موجود أو تم حذفه بالفعل.");
 
-        _context.Products.Remove(product);
+        product.IsDeleted = true;
         _context.SaveChanges();
     }
 

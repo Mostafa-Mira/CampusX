@@ -49,7 +49,7 @@ public class HomeController : Controller
             ProductCardViewModel cardVM = new()
             {
                 Id = product.Id,
-                IsSample = CampusX.Data.Seed.SampleProductSeeder.IsSampleProduct(product.Id),
+                CanDelete = _environment.IsDevelopment(),
                 Name = product.Name,
                 Price = product.Price,
                 CategoryName = product.Category?.Name ?? "Uncategorized",
@@ -60,7 +60,6 @@ public class HomeController : Controller
                 SellerName = product.Seller?.FullName ?? "Campus Student",
                 CreatedAt = product.CreatedAt
             };
-            cardVM.CanDeleteSample = cardVM.IsSample && _environment.IsDevelopment();
             homeVM.Products.Add(cardVM);
         }
 

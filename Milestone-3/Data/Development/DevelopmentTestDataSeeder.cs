@@ -26,7 +26,15 @@ public static class DevelopmentTestDataSeeder
         }
 
         var connectionBuilder = new SqlConnectionStringBuilder(connectionString);
-        if (connectionBuilder.DataSource is not "." and not "(local)" ||
+        var server = connectionBuilder.DataSource.Trim();
+        var isLocalServer = server.Equals(".", StringComparison.OrdinalIgnoreCase)
+            || server.Equals("(local)", StringComparison.OrdinalIgnoreCase)
+            || server.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+            || server.Equals("localhost,1433", StringComparison.OrdinalIgnoreCase)
+            || server.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
+            || server.Equals("127.0.0.1,1433", StringComparison.OrdinalIgnoreCase);
+
+        if (!isLocalServer ||
             !string.Equals(connectionBuilder.InitialCatalog, "CampusXDb", StringComparison.OrdinalIgnoreCase))
         {
             logger.LogWarning("Development test data was not seeded because CampusXDb is not the configured local CampusXDb database.");
