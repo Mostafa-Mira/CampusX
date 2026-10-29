@@ -1,3 +1,4 @@
+@inject CampusX.Models.CategoryBL LayoutCategoryBL
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,10 +15,10 @@
                 <span class="brand-name">Campus<span>X</span><small>STUDENT MARKETPLACE</small></span>
             </a>
 
-            <form class="search-form" asp-controller="Home" asp-action="Index" method="get" role="search">
+            <form id="search-form" class="search-form" asp-controller="Home" asp-action="Index" method="get" role="search">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
                 <label class="visually-hidden" for="site-search">Search products</label>
-                <input id="site-search" type="search" name="searchTerm" placeholder="Search for books, tech, and more..." />
+                <input id="site-search" type="search" name="searchTerm" value="@Context.Request.Query["searchTerm"]" placeholder="Search for books, tech, and more..." />
                 <button type="submit">Search</button>
             </form>
 
@@ -50,12 +51,29 @@
                     </nav>
 
                     <div class="sidebar-divider"></div>
-                    <div class="filter-heading"><span class="sidebar-section-label">FILTERS</span><span class="coming-soon">Coming soon</span></div>
-                    <div class="filter-group" aria-label="Filters coming soon">
-                        <div class="filter-item"><span class="filter-label">Categories</span><span class="filter-display">All categories <span aria-hidden="true">⌄</span></span></div>
+                    <div class="filter-heading"><span class="sidebar-section-label">FILTERS</span></div>
+                    <div class="filter-group" aria-label="Product filters">
+                        <div class="filter-item">
+                            <label class="filter-label" for="filter-category">Categories</label>
+                            <select id="filter-category" class="filter-control" name="categoryId" form="search-form">
+                                <option value="">All categories</option>
+                                @foreach (var cat in LayoutCategoryBL.GetAll())
+                                {
+                                    <option value="@cat.Id" selected="@(Context.Request.Query["categoryId"] == cat.Id.ToString())">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
                         <div class="filter-item"><span class="filter-label">University</span><span class="filter-display">Any university <span aria-hidden="true">⌄</span></span></div>
-                        <div class="filter-item"><span class="filter-label">Price Range</span><span class="filter-display">Any price <span aria-hidden="true">⌄</span></span></div>
+                        <div class="filter-item">
+                            <span class="filter-label">Price Range (EGP)</span>
+                            <div class="price-range">
+                                <input type="number" class="filter-control" name="minPrice" form="search-form" min="0" placeholder="Min" value="@Context.Request.Query["minPrice"]" aria-label="Minimum price" />
+                                <input type="number" class="filter-control" name="maxPrice" form="search-form" min="0" placeholder="Max" value="@Context.Request.Query["maxPrice"]" aria-label="Maximum price" />
+                            </div>
+                        </div>
                         <div class="filter-item"><span class="filter-label">Product Condition</span><span class="filter-display">Any condition <span aria-hidden="true">⌄</span></span></div>
+                        <button type="submit" form="search-form" class="filter-apply">Apply filters</button>
+                        <a class="filter-clear" asp-controller="Home" asp-action="Index">Clear all</a>
                     </div>
                     <div class="sidebar-note"><span aria-hidden="true">✦</span><span>Find what you need, right here on campus.</span></div>
                 </div>
@@ -69,3 +87,4 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+

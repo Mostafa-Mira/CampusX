@@ -12,7 +12,7 @@ public class ProductBL
     public ProductBL(CampusXDbContext context) => _context = context;
 
     public List<Product> GetAvailable(string? name = null, Guid? categoryId = null,
-        decimal? minPrice = null, decimal? maxPrice = null)
+        decimal? minPrice = null, decimal? maxPrice = null, string? sortBy = null)
     {
         if (minPrice < 0 || maxPrice < 0 || (minPrice.HasValue && maxPrice < minPrice))
             throw new ArgumentException("Invalid price range.");
@@ -31,7 +31,15 @@ public class ProductBL
         if (maxPrice.HasValue)
             products = products.Where(product => product.Price <= maxPrice.Value);
 
-        return products.OrderByDescending(product => product.CreatedAt).ToList();
+       
+        if (sortBy == "price_asc")
+            products = products.OrderBy(product => product.Price);
+        else if (sortBy == "price_desc")
+            products = products.OrderByDescending(product => product.Price);
+        else
+            products = products.OrderByDescending(product => product.CreatedAt);
+
+        return products.ToList();
     }
 
     public Product? GetById(Guid id) =>
