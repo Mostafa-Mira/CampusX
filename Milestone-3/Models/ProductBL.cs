@@ -1,4 +1,5 @@
 using CampusX.Data.DbContexts;
+using CampusX.Data.Seed;
 using CampusX.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -77,6 +78,20 @@ public class ProductBL
     {
         var product = GetOwnedProduct(studentId, productId);
         product.IsDeleted = true;
+        _context.SaveChanges();
+    }
+
+    public void DeleteById(Guid pid)
+    {
+        if (!SampleProductSeeder.IsSampleProduct(pid))
+            throw new InvalidOperationException("ID غير مسموح.");
+
+        var product = _context.Products.Find(pid);
+
+        if (product is null)
+            return;
+
+        _context.Products.Remove(product);
         _context.SaveChanges();
     }
 

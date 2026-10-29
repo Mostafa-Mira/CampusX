@@ -7,10 +7,12 @@ namespace CampusX.Controllers;
 public class HomeController : Controller
 {
     private readonly ProductBL _productBL;
+    private readonly IWebHostEnvironment _environment;
 
-    public HomeController(ProductBL productBL)
+    public HomeController(ProductBL productBL, IWebHostEnvironment environment)
     {
         _productBL = productBL;
+        _environment = environment;
     }
 
     public IActionResult Index()
@@ -27,6 +29,8 @@ public class HomeController : Controller
             ProductCardViewModel cardVM = new ProductCardViewModel();
 
             cardVM.Id = product.Id;
+            cardVM.IsSample = CampusX.Data.Seed.SampleProductSeeder.IsSampleProduct(product.Id);
+            cardVM.CanDeleteSample = cardVM.IsSample && _environment.IsDevelopment();
             cardVM.Name = product.Name;
             cardVM.Price = product.Price;
             cardVM.CategoryName = product.Category?.Name ?? "Uncategorized";

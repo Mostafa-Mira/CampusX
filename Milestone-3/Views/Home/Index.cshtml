@@ -25,6 +25,10 @@
 </section>
 
 <section class="catalog" aria-labelledby="catalog-title">
+    @if (TempData["SampleProductMessage"] is string sampleMessage)
+    {
+        <p role="status">@sampleMessage</p>
+    }
     <div class="catalog-heading">
         <div>
             <span class="section-eyebrow">EXPLORE CAMPUSX</span>
