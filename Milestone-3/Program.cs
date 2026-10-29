@@ -1,5 +1,6 @@
 using CampusX.Data.DbContexts;
 using CampusX.Data.Development;
+using CampusX.Data.Seed;
 using CampusX.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,8 +19,26 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<CampusXDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("SampleProductSeeder");
+    try
+    {
+        if (db.Database.CanConnect())
+        {
+            var pendingMigrations = db.Database.GetPendingMigrations().ToArray();
+            if (pendingMigrations.Length == 0)
+                SampleProductSeeder.Seed(db);
+            else
+                logger.LogWarning("Sample products were not seeded because the database has pending migrations. Apply them with dotnet ef database update.");
+        }
+    }
+    catch (Exception exception)
+    {
+        logger.LogWarning(exception, "Sample product seeding was skipped. Make sure the database is available and migrated.");
+    }
+
     DevelopmentTestDataSeeder.TrySeed(
-        scope.ServiceProvider.GetRequiredService<CampusXDbContext>(),
+        db,
         app.Configuration,
         app.Environment,
         scope.ServiceProvider.GetRequiredService<ILogger<Program>>());
@@ -30,7 +49,7 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-    
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();

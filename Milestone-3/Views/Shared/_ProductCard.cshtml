@@ -36,5 +36,23 @@
     {
         <a class="product-phone-link" href="tel:@Model.PhoneNumber" title="Call seller">📞 @Model.PhoneNumber</a>
     }
+    @if (Model.CanDeleteSample)
+    {
+        <div class="sample-product-tools">
+            <small>Sample ID: <code>@Model.Id</code></small>
+            <button type="button" class="sample-delete-trigger" onclick="document.getElementById('delete-sample-@Model.Id').showModal()">Delete sample</button>
+        </div>
+        <dialog class="sample-delete-dialog" id="delete-sample-@Model.Id" aria-labelledby="delete-title-@Model.Id" aria-describedby="delete-message-@Model.Id" dir="rtl">
+            <div class="sample-delete-dialog-body">
+                <span class="sample-delete-icon" aria-hidden="true">!</span>
+                <h2 id="delete-title-@Model.Id">هل أنت متأكد؟</h2>
+                <p id="delete-message-@Model.Id">لا يمكن استرجاع المنتج بعد الحذف.</p>
+                <form asp-controller="SampleProducts" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="sample-delete-actions">
+                    <button type="button" class="sample-delete-cancel" onclick="document.getElementById('delete-sample-@Model.Id').close()">إلغاء</button>
+                    <button type="submit" class="sample-delete-confirm">نعم، احذف المنتج</button>
+                </form>
+            </div>
+        </dialog>
+    }
     <a class="product-details-link" asp-controller="Home" asp-action="Details" asp-route-id="@Model.Id">View details <span aria-hidden="true">→</span></a>
 </article>

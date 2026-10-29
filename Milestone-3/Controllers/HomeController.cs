@@ -1,77 +1,78 @@
 using CampusX.Models;
 using CampusX.ViewModels;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CampusX.Controllers
+namespace CampusX.Controllers;
+
+public class HomeController : Controller
 {
-    public class HomeController : Controller
+    private readonly ProductBL _productBL;
+    private readonly IWebHostEnvironment _environment;
+
+    public HomeController(ProductBL productBL, IWebHostEnvironment environment)
     {
-        private readonly ProductBL _productBL;
+        _productBL = productBL;
+        _environment = environment;
+    }
 
-        public HomeController(ProductBL productBL)
+    public IActionResult Index()
+    {
+        List<Product> products = _productBL.GetAvailable();
+        HomeIndexViewModel homeVM = new()
         {
-            _productBL = productBL;
-        }
+            Heading = "Browse Products",
+            Description = "Buy and sell products with students."
+        };
 
-        public IActionResult Index()
+        foreach (Product product in products)
         {
-            List<Product> products = _productBL.GetAvailable();
-
-            HomeIndexViewModel homeVM = new HomeIndexViewModel();
-
-            homeVM.Heading = "Browse Products";
-            homeVM.Description = "Buy and sell products with students.";
-
-            foreach (Product product in products)
-            {
-                ProductCardViewModel cardVM = new ProductCardViewModel();
-
-                cardVM.Id = product.Id;
-                cardVM.Name = product.Name;
-                cardVM.Price = product.Price;
-                cardVM.CategoryName = product.Category?.Name ?? "Uncategorized";
-                cardVM.College = product.College ?? "General";
-                cardVM.PhoneNumber = product.PhoneNumber ?? string.Empty;
-                cardVM.ImageUrl = product.ImageUrl;
-                cardVM.Description = product.Description;
-                cardVM.SellerName = product.Seller?.FullName ?? "Campus Student";
-                cardVM.CreatedAt = product.CreatedAt;
-
-                homeVM.Products.Add(cardVM);
-            }
-
-            return View("Index", homeVM);
-        }
-
-        public IActionResult Details(Guid id)
-        {
-            Product? product = _productBL.GetById(id);
-
-            if (product is null)
-                return NotFound();
-
-            ProductDetailsViewModel detailsVM = new ProductDetailsViewModel
+            ProductCardViewModel cardVM = new()
             {
                 Id = product.Id,
+                IsSample = CampusX.Data.Seed.SampleProductSeeder.IsSampleProduct(product.Id),
                 Name = product.Name,
-                Description = product.Description,
                 Price = product.Price,
-                ImageUrl = product.ImageUrl,
                 CategoryName = product.Category?.Name ?? "Uncategorized",
-                College = product.College,
-                PhoneNumber = product.PhoneNumber,
-                Status = product.Status,
-                SellerName = product.Seller?.FullName ?? "Seller information unavailable",
-                SellerCollegeName = product.Seller?.CollegeName,
-                SellerEmail = product.Seller?.Email,
-                SellerPhoneNumber = product.Seller?.PhoneNumber
+                College = product.College ?? "General",
+                PhoneNumber = product.PhoneNumber ?? string.Empty,
+                ImageUrl = product.ImageUrl,
+                Description = product.Description,
+                SellerName = product.Seller?.FullName ?? "Campus Student",
+                CreatedAt = product.CreatedAt
             };
-
-            return View(detailsVM);
+            cardVM.CanDeleteSample = cardVM.IsSample && _environment.IsDevelopment();
+            homeVM.Products.Add(cardVM);
         }
 
-        public IActionResult Error() => View();
+        return View("Index", homeVM);
     }
+
+    public IActionResult Details(Guid id)
+    {
+        Product? product = _productBL.GetById(id);
+
+        if (product is null)
+            return NotFound();
+
+        ProductDetailsViewModel detailsVM = new()
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price,
+            ImageUrl = product.ImageUrl,
+            CategoryName = product.Category?.Name ?? "Uncategorized",
+            College = product.College,
+            PhoneNumber = product.PhoneNumber,
+            Status = product.Status,
+            SellerName = product.Seller?.FullName ?? "Seller information unavailable",
+            SellerCollegeName = product.Seller?.CollegeName,
+            SellerEmail = product.Seller?.Email,
+            SellerPhoneNumber = product.Seller?.PhoneNumber
+        };
+
+        return View(detailsVM);
+    }
+
+    public IActionResult Error() => View();
 }
