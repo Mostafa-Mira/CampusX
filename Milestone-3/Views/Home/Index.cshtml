@@ -2,10 +2,6 @@
 
 @{
     ViewData["Title"] = Model.Heading;
-    var categories = Model.Products.Select(product => product.CategoryName)
-        .Where(category => !string.IsNullOrWhiteSpace(category))
-        .Distinct()
-        .Take(6);
 }
 
 <section class="hero" aria-labelledby="hero-title">
@@ -41,14 +37,39 @@
     <div class="catalog-controls">
         <!-- تم تحويل التابات إلى أزرار تفاعلية تعمل بالـ JavaScript -->
         <div class="category-chips" aria-label="Category filters">
-            <button type="button" class="category-chip is-active" data-category="all" style="border:none; cursor:pointer; font:inherit;">All products</button>
-            @foreach (var category in categories)
+            <a class="category-chip @(Model.CategoryId == null ? "is-active" : "")"
+               asp-controller="Home" asp-action="Index"
+               asp-route-searchTerm="@Model.SearchTerm"
+               asp-route-minPrice="@Model.MinPrice"
+               asp-route-maxPrice="@Model.MaxPrice"
+               asp-route-sortBy="@Model.SortBy">All products</a>
+            @foreach (var category in Model.Categories)
             {
-                <button type="button" class="category-chip" data-category="@category" style="border:none; cursor:pointer; font:inherit;">@category</button>
+                <a class="category-chip @(Model.CategoryId == category.Id ? "is-active" : "")"
+                   asp-controller="Home" asp-action="Index"
+                   asp-route-categoryId="@category.Id"
+                   asp-route-searchTerm="@Model.SearchTerm"
+                   asp-route-minPrice="@Model.MinPrice"
+                   asp-route-maxPrice="@Model.MaxPrice"
+                   asp-route-sortBy="@Model.SortBy">@category.Name</a>
             }
         </div>
-        <div class="sort-placeholder" aria-label="Sorting coming soon">Sort by <strong>Newest</strong><span aria-hidden="true">⌄</span><small>Coming soon</small></div>
+        <label class="sort-select">
+            Sort by
+            <select name="sortBy" form="search-form" onchange="this.form.submit()">
+                <option value="newest" selected="@(Model.SortBy == "newest")">Newest</option>
+                <option value="price_asc" selected="@(Model.SortBy == "price_asc")">Price: Low to High</option>
+                <option value="price_desc" selected="@(Model.SortBy == "price_desc")">Price: High to Low</option>
+            </select>
+        </label>
     </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="empty-state" role="alert">
+            <h3>@Model.ErrorMessage</h3>
+        </div>
+    }
 
     @if (Model.Products.Count == 0)
     {
