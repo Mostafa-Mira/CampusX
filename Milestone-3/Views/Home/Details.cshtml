@@ -5,7 +5,12 @@
 }
 
 <section class="product-details" aria-labelledby="product-title">
-    <a class="back-to-products" asp-action="Index"><span aria-hidden="true">←</span> Back to Products</a>
+
+  
+    <div style="margin-bottom: 20px;">
+        <a class="back-to-products" asp-action="Index"><span aria-hidden="true">←</span> Back to Products</a>
+    </div>
+ 
 
     <div class="product-details-card">
         <div class="product-details-media">
@@ -71,6 +76,15 @@
                     }
                 </dl>
             </div>
+
+            #region Mostafa: Edit Product Button inside Details Card
+            <div style="margin-top: 25px; display: flex; justify-content: flex-end;">
+                <a asp-controller="Products" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary" style="background-color: #198754; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                    <i class="fas fa-edit"></i> Edit Product
+                </a>
+            </div>
+            #endregion
+
         </div>
     </div>
 </section>
