@@ -1,0 +1,59 @@
+@model CampusX.ViewModels.ProductDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<section class="product-details" aria-labelledby="product-title">
+    <a class="back-to-products" asp-action="Index"><span aria-hidden="true">←</span> Back to Products</a>
+
+    <div class="product-details-card">
+        <div class="product-details-media">
+            @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+            {
+                <img src="@Model.ImageUrl" alt="@Model.Name" onerror="this.hidden=true; this.nextElementSibling.hidden=false;" />
+                <div class="product-details-placeholder" hidden role="img" aria-label="Image unavailable for @Model.Name"><span aria-hidden="true">▦</span><span>Image unavailable</span></div>
+            }
+            else
+            {
+                <div class="product-details-placeholder" role="img" aria-label="Image unavailable for @Model.Name"><span aria-hidden="true">▦</span><span>Image unavailable</span></div>
+            }
+        </div>
+
+        <div class="product-details-content">
+            <div class="details-label-row"><span class="product-category">@Model.CategoryName</span><span class="product-status">@Model.Status</span></div>
+            <h1 id="product-title">@Model.Name</h1>
+            <p class="product-id">Listing ID: @Model.Id</p>
+            <p class="details-price">@Model.Price.ToString("N2") <span>EGP</span></p>
+            <div class="details-section"><h2>Description</h2><p class="details-description">@Model.Description</p></div>
+
+            <div class="seller-details">
+                <div class="seller-details-heading">
+                    <span class="seller-details-avatar" aria-hidden="true">@(string.IsNullOrWhiteSpace(Model.SellerName) ? "?" : Model.SellerName[..1].ToUpperInvariant())</span>
+                    <div>
+                        <span>Listed by</span>
+                        <h2>@Model.SellerName</h2>
+                        @if (!string.IsNullOrWhiteSpace(Model.SellerCollegeName))
+                        {
+                            <p class="seller-university">@Model.SellerCollegeName</p>
+                        }
+                    </div>
+                </div>
+                <dl class="seller-contact-list">
+                    @if (!string.IsNullOrWhiteSpace(Model.SellerEmail))
+                    {
+                        <div><dt>Email</dt><dd><a href="mailto:@Model.SellerEmail">@Model.SellerEmail</a></dd></div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SellerPhoneNumber))
+                    {
+                        <div><dt>Phone</dt><dd><a href="tel:@Model.SellerPhoneNumber">@Model.SellerPhoneNumber</a></dd></div>
+                    }
+                    @if (string.IsNullOrWhiteSpace(Model.SellerEmail) && string.IsNullOrWhiteSpace(Model.SellerPhoneNumber))
+                    {
+                        <div><dt>Contact</dt><dd>Contact details are not available.</dd></div>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+</section>

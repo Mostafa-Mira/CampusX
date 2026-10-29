@@ -74,23 +74,16 @@ namespace CampusX.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                // التأكد من وجود قسم (Category) افتراضي أو جلبه
-                var defaultCategory = _context.Categories.FirstOrDefault();
-                Guid categoryId;
-                if (defaultCategory == null)
+                // Use the category entered by the client so it can be shown consistently on product details.
+                string categoryName = model.Category.Trim();
+                var category = _context.Categories.FirstOrDefault(category => category.Name == categoryName);
+                if (category == null)
                 {
-                    var newCategory = new Category
+                    category = new Category
                     {
-                        Id = Guid.NewGuid(),
-                        Name = "General"
+                        Name = categoryName
                     };
-                    _context.Categories.Add(newCategory);
-                    await _context.SaveChangesAsync();
-                    categoryId = newCategory.Id;
-                }
-                else
-                {
-                    categoryId = defaultCategory.Id;
+                    _context.Categories.Add(category);
                 }
 
                 // ربط الـ ViewModel مع كلاس Product لحفظه
@@ -99,7 +92,7 @@ namespace CampusX.Controllers
                     Name = model.Name,
                     Description = model.Description,
                     Price = model.Price,
-                    CategoryId = categoryId,
+                    CategoryId = category.Id,
                     ImageUrl = !string.IsNullOrEmpty(uniqueFileName) ? "/images/products/" + uniqueFileName : string.Empty,
                     SellerId = defaultUser.Id
                 };
