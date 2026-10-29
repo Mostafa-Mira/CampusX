@@ -10,6 +10,8 @@ public class ProductDetailsViewModel
     public decimal Price { get; set; }
     public string? ImageUrl { get; set; }
     public string CategoryName { get; set; } = "Uncategorized";
+    public string? College { get; set; }
+    public string? PhoneNumber { get; set; }
     public ProductStatus Status { get; set; }
     public string SellerName { get; set; } = "Seller information unavailable";
     public string? SellerCollegeName { get; set; }

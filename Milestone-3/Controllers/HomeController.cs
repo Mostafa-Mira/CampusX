@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
 using CampusX.Models;
 using CampusX.ViewModels;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CampusX.Controllers
 {
@@ -32,6 +32,8 @@ namespace CampusX.Controllers
                 cardVM.Name = product.Name;
                 cardVM.Price = product.Price;
                 cardVM.CategoryName = product.Category?.Name ?? "Uncategorized";
+                cardVM.College = product.College ?? "General";
+                cardVM.PhoneNumber = product.PhoneNumber ?? string.Empty;
                 cardVM.ImageUrl = product.ImageUrl;
                 cardVM.Description = product.Description;
                 cardVM.SellerName = product.Seller?.FullName ?? "Campus Student";
@@ -58,6 +60,8 @@ namespace CampusX.Controllers
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
                 CategoryName = product.Category?.Name ?? "Uncategorized",
+                College = product.College,
+                PhoneNumber = product.PhoneNumber,
                 Status = product.Status,
                 SellerName = product.Seller?.FullName ?? "Seller information unavailable",
                 SellerCollegeName = product.Seller?.CollegeName,

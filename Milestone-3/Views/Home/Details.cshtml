@@ -27,6 +27,23 @@
             <p class="details-price">@Model.Price.ToString("N2") <span>EGP</span></p>
             <div class="details-section"><h2>Description</h2><p class="details-description">@Model.Description</p></div>
 
+            @if (!string.IsNullOrWhiteSpace(Model.College) || !string.IsNullOrWhiteSpace(Model.PhoneNumber))
+            {
+                <div class="details-section product-details-info">
+                    <h2>Listing details</h2>
+                    <dl>
+                        @if (!string.IsNullOrWhiteSpace(Model.College))
+                        {
+                            <div><dt>College</dt><dd>@Model.College</dd></div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber))
+                        {
+                            <div><dt>Contact phone</dt><dd><a href="tel:@Model.PhoneNumber">@Model.PhoneNumber</a></dd></div>
+                        }
+                    </dl>
+                </div>
+            }
+
             <div class="seller-details">
                 <div class="seller-details-heading">
                     <span class="seller-details-avatar" aria-hidden="true">@(string.IsNullOrWhiteSpace(Model.SellerName) ? "?" : Model.SellerName[..1].ToUpperInvariant())</span>

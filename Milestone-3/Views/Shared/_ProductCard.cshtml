@@ -16,7 +16,13 @@
             }
         </div>
         <div class="product-body">
-            <span class="product-category">@Model.CategoryName</span>
+            <div class="product-card-badges">
+                <span class="product-category">@Model.CategoryName</span>
+                @if (!string.IsNullOrWhiteSpace(Model.College))
+                {
+                    <span class="product-college">@Model.College</span>
+                }
+            </div>
             <h3 class="product-name">@Model.Name</h3>
             <p class="product-description">@Model.Description</p>
             <div class="product-price">@Model.Price.ToString("N2") <span>EGP</span></div>
@@ -26,5 +32,9 @@
             <time datetime="@Model.CreatedAt.ToString("O")">@Model.CreatedAt.ToString("dd MMM yyyy")</time>
         </div>
     </a>
+    @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber))
+    {
+        <a class="product-phone-link" href="tel:@Model.PhoneNumber" title="Call seller">📞 @Model.PhoneNumber</a>
+    }
     <a class="product-details-link" asp-controller="Home" asp-action="Details" asp-route-id="@Model.Id">View details <span aria-hidden="true">→</span></a>
 </article>
