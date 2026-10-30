@@ -9,10 +9,7 @@
             }
             else
             {
-                <div class="product-image-placeholder" role="img" aria-label="Image unavailable for @Model.Name">
-                    <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 19h33a7 7 0 0 1 7 7v36H24a7 7 0 0 0-7 7V19Z"/><path d="M57 62h7V33a7 7 0 0 0-7-7M17 69a7 7 0 0 1 7-7h40"/><path d="M26 31h21M26 39h17"/></svg>
-                    <span>CampusX listing</span>
-                </div>
+                <img src="~/images/products/campusx-product-fallback.png" alt="CampusX marketplace products" loading="lazy" />
             }
         </div>
         <div class="product-body">
@@ -35,23 +32,6 @@
     @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber))
     {
         <a class="product-phone-link" href="tel:@Model.PhoneNumber" title="Call seller">📞 @Model.PhoneNumber</a>
-    }
-    @if (Model.CanDelete)
-    {
-        <div class="sample-product-tools">
-            <button type="button" class="sample-delete-trigger" onclick="document.getElementById('delete-product-@Model.Id').showModal()">Delete product</button>
-        </div>
-        <dialog class="sample-delete-dialog" id="delete-product-@Model.Id" aria-labelledby="delete-title-@Model.Id" aria-describedby="delete-message-@Model.Id" dir="ltr">
-            <div class="sample-delete-dialog-body">
-                <span class="sample-delete-icon" aria-hidden="true">!</span>
-                <h2 id="delete-title-@Model.Id">Are you sure?</h2>
-                <p id="delete-message-@Model.Id">This product cannot be restored after deletion.</p>
-                <form asp-controller="ProductsDelete" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="sample-delete-actions">
-                    <button type="button" class="sample-delete-cancel" onclick="document.getElementById('delete-product-@Model.Id').close()">Cancel</button>
-                    <button type="submit" class="sample-delete-confirm">Yes, delete product</button>
-                </form>
-            </div>
-        </dialog>
     }
     <a class="product-details-link" asp-controller="Home" asp-action="Details" asp-route-id="@Model.Id">View details <span aria-hidden="true">→</span></a>
 </article>

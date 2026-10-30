@@ -4,6 +4,7 @@ using CampusX.ViewModel;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +13,12 @@ namespace CampusX.Controllers
 {
     public class ProductsController : Controller
     {
+        private const long MaxProductImageSizeBytes = 5 * 1024 * 1024;
+        private static readonly HashSet<string> AllowedProductImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".webp", ".gif"
+        };
+
         private readonly CampusXDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
@@ -28,20 +35,26 @@ namespace CampusX.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Add(AddProductViewModel model)
         {
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid || !TryValidateProductImage(model.ImageFile))
                 return View(model);
 
-            string uniqueFileName = string.Empty;
-            if (model.ImageFile != null && model.ImageFile.Length > 0)
+            string imageUrl = string.Empty;
+            if (model.ImageFile is { Length: > 0 })
             {
-                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                uniqueFileName = Guid.NewGuid() + "_" + model.ImageFile.FileName;
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using var fileStream = new FileStream(filePath, FileMode.Create);
-                await model.ImageFile.CopyToAsync(fileStream);
+                try
+                {
+                    imageUrl = await SaveProductImageAsync(model.ImageFile);
+                }
+                catch (IOException)
+                {
+                    ModelState.AddModelError(nameof(model.ImageFile), "The image could not be uploaded. Please try another file.");
+                    return View(model);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    ModelState.AddModelError(nameof(model.ImageFile), "The image could not be uploaded. Please contact an administrator.");
+                    return View(model);
+                }
             }
 
             var defaultUser = _context.ApplicationUsers.FirstOrDefault();
@@ -73,7 +86,7 @@ namespace CampusX.Controllers
                 CategoryId = category.Id,
                 College = string.IsNullOrWhiteSpace(model.College) ? "General" : model.College,
                 PhoneNumber = model.PhoneNumber,
-                ImageUrl = !string.IsNullOrEmpty(uniqueFileName) ? "/images/products/" + uniqueFileName : string.Empty,
+                ImageUrl = imageUrl,
                 SellerId = defaultUser.Id
             };
 
@@ -114,7 +127,7 @@ namespace CampusX.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, AddProductViewModel model)
         {
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid || !TryValidateProductImage(model.ImageFile))
             {
                 ViewBag.ProductId = id;
                 // في حالة وجود خطأ في الـ Validation نرجع لصفحة الـ Edit برضه ومعاها الـ ID
@@ -127,19 +140,25 @@ namespace CampusX.Controllers
                 return NotFound();
             }
 
-            string uniqueFileName = product.ImageUrl;
-            if (model.ImageFile != null && model.ImageFile.Length > 0)
+            string imageUrl = product.ImageUrl;
+            if (model.ImageFile is { Length: > 0 })
             {
-                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                uniqueFileName = Guid.NewGuid() + "_" + model.ImageFile.FileName;
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using var fileStream = new FileStream(filePath, FileMode.Create);
-                await model.ImageFile.CopyToAsync(fileStream);
-
-                uniqueFileName = "/images/products/" + uniqueFileName;
+                try
+                {
+                    imageUrl = await SaveProductImageAsync(model.ImageFile);
+                }
+                catch (IOException)
+                {
+                    ModelState.AddModelError(nameof(model.ImageFile), "The image could not be uploaded. Please try another file.");
+                    ViewBag.ProductId = id;
+                    return View("Edit", model);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    ModelState.AddModelError(nameof(model.ImageFile), "The image could not be uploaded. Please contact an administrator.");
+                    ViewBag.ProductId = id;
+                    return View("Edit", model);
+                }
             }
 
             string categoryName = model.Category.Trim();
@@ -157,10 +176,7 @@ namespace CampusX.Controllers
             product.CategoryId = category.Id;
             product.College = string.IsNullOrWhiteSpace(model.College) ? "General" : model.College;
             product.PhoneNumber = model.PhoneNumber;
-            if (model.ImageFile != null && model.ImageFile.Length > 0)
-            {
-                product.ImageUrl = uniqueFileName;
-            }
+            product.ImageUrl = imageUrl;
 
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
@@ -168,5 +184,50 @@ namespace CampusX.Controllers
             return RedirectToAction("Details", "Home", new { id = product.Id });
         }
         #endregion
+
+        private bool TryValidateProductImage(IFormFile? imageFile)
+        {
+            if (imageFile is null || imageFile.Length == 0)
+                return true;
+
+            if (imageFile.Length > MaxProductImageSizeBytes)
+            {
+                ModelState.AddModelError(nameof(AddProductViewModel.ImageFile), "Image files must be 5 MB or smaller.");
+                return false;
+            }
+
+            string extension = Path.GetExtension(Path.GetFileName(imageFile.FileName));
+            if (!AllowedProductImageExtensions.Contains(extension))
+            {
+                ModelState.AddModelError(nameof(AddProductViewModel.ImageFile), "Upload a JPG, PNG, WEBP, or GIF image.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task<string> SaveProductImageAsync(IFormFile imageFile)
+        {
+            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+            Directory.CreateDirectory(uploadsFolder);
+
+            string extension = Path.GetExtension(Path.GetFileName(imageFile.FileName)).ToLowerInvariant();
+            string fileName = $"{Guid.NewGuid():N}{extension}";
+            string filePath = Path.Combine(uploadsFolder, fileName);
+
+            try
+            {
+                await using var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                await imageFile.CopyToAsync(fileStream);
+            }
+            catch
+            {
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+                throw;
+            }
+
+            return $"/images/products/{fileName}";
+        }
     }
 }

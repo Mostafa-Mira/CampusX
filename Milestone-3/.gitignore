@@ -2,4 +2,5 @@ appsettings.Development.json
 .idea/
 bin/
 obj/
+.codex-tools/
 *.sln.DotSettings.user
