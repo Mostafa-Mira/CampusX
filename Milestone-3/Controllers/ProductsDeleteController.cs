@@ -25,7 +25,7 @@ public sealed class ProductsDeleteController : Controller
         try
         {
             _productBL.DeleteById(id);
-            TempData["SampleProductMessage"] = "تم حذف المنتج بنجاح.";
+            TempData["SampleProductMessage"] = "Product deleted successfully.";
         }
         catch (InvalidOperationException exception)
         {

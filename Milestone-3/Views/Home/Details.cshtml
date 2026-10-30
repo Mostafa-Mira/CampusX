@@ -89,14 +89,14 @@
 
             @if (Environment.IsDevelopment())
             {
-                <dialog class="sample-delete-dialog" id="delete-product-@Model.Id" aria-labelledby="delete-title-@Model.Id" aria-describedby="delete-message-@Model.Id" dir="rtl">
+                <dialog class="sample-delete-dialog" id="delete-product-@Model.Id" aria-labelledby="delete-title-@Model.Id" aria-describedby="delete-message-@Model.Id" dir="ltr">
                     <div class="sample-delete-dialog-body">
                         <span class="sample-delete-icon" aria-hidden="true">!</span>
-                        <h2 id="delete-title-@Model.Id">هل أنت متأكد؟</h2>
-                        <p id="delete-message-@Model.Id">لا يمكن استرجاع المنتج بعد الحذف.</p>
+                        <h2 id="delete-title-@Model.Id">Are you sure?</h2>
+                        <p id="delete-message-@Model.Id">This product cannot be restored after deletion.</p>
                         <form asp-controller="ProductsDelete" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="sample-delete-actions">
-                            <button type="button" class="sample-delete-cancel" onclick="document.getElementById('delete-product-@Model.Id').close()">إلغاء</button>
-                            <button type="submit" class="sample-delete-confirm">نعم، احذف المنتج</button>
+                            <button type="button" class="sample-delete-cancel" onclick="document.getElementById('delete-product-@Model.Id').close()">Cancel</button>
+                            <button type="submit" class="sample-delete-confirm">Yes, delete product</button>
                         </form>
                     </div>
                 </dialog>

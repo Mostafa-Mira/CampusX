@@ -93,7 +93,7 @@ public class ProductBL
         var product = _context.Products.Find(pid);
 
         if (product is null || product.IsDeleted)
-            throw new InvalidOperationException("المنتج غير موجود أو تم حذفه بالفعل.");
+            throw new InvalidOperationException("Product was not found or has already been deleted.");
 
         product.IsDeleted = true;
         _context.SaveChanges();
