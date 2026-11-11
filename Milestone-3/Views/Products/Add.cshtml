@@ -1,4 +1,4 @@
-﻿@model CampusX.ViewModel.AddProductViewModel
+@model CampusX.ViewModel.AddProductViewModel
 
 @{
     ViewData["Title"] = "Add New Product";
@@ -6,7 +6,8 @@
 
 <div class="add-product-card">
     <h2 style="font-size: 26px; font-weight: 700; color: #111; margin-bottom: 8px;">Add New Product</h2>
-    <p style="color: #656d76; font-size: 14px; margin-bottom: 28px;">List your study essentials, books, or tech gear for students on campus.</p>
+    <p style="color: #656d76; font-size: 14px; margin-bottom: 8px;">List your study essentials, books, or tech gear for students on campus.</p>
+    <p style="color: #57606a; font-size: 13px; margin-bottom: 28px;">CampusX commission: @ViewBag.CommissionRatePercent% of a completed sale. Collection starts only after verified payments are available.</p>
 
     <form asp-action="Add" method="post" enctype="multipart/form-data">
         <div asp-validation-summary="ModelOnly" style="color: #cf222e; margin-bottom: 20px; font-size: 13px;"></div>
@@ -64,7 +65,7 @@
                 <label for="customFile" style="background: #f6f8fa; color: #24292f; padding: 10px 16px; font-weight: 500; font-size: 14px; border-right: 1px solid #d0d7de; cursor: pointer; margin-bottom: 0;">
                     Browse...
                 </label>
-                <input asp-for="ImageFile" id="customFile" type="file" style="display: none;" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0] ? this.files[0].name : 'No file chosen';" />
+                <input asp-for="ImageFile" id="customFile" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" style="display: none;" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0] ? this.files[0].name : 'No file chosen';" />
                 <span id="fileNameDisplay" style="padding: 0 14px; color: #57606a; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     No file chosen
                 </span>

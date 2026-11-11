@@ -174,6 +174,68 @@ namespace CampusX.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CampusX.Models.ProductPromotion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ActivatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "ExpiresAt");
+
+                    b.ToTable("ProductPromotions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductPromotions_Expiry", "[ExpiresAt] > [ActivatedAt]");
+                        });
+                });
+
+            modelBuilder.Entity("CampusX.Models.PromotionCreditPurchase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("BuyerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CreditsPurchased")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Package")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProviderReference")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("PurchasedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuyerId");
+
+                    b.ToTable("PromotionCreditPurchases", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PromotionCreditPurchases_Credits_Positive", "[CreditsPurchased] > 0");
+                        });
+                });
+
             modelBuilder.Entity("CampusX.Models.Report", b =>
                 {
                     b.Property<Guid>("Id")
@@ -251,6 +313,28 @@ namespace CampusX.Data.Migrations
                     b.Navigation("Seller");
                 });
 
+            modelBuilder.Entity("CampusX.Models.ProductPromotion", b =>
+                {
+                    b.HasOne("CampusX.Models.Product", "Product")
+                        .WithMany("Promotions")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("CampusX.Models.PromotionCreditPurchase", b =>
+                {
+                    b.HasOne("CampusX.Models.ApplicationUser", "Buyer")
+                        .WithMany("PromotionCreditPurchases")
+                        .HasForeignKey("BuyerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Buyer");
+                });
+
             modelBuilder.Entity("CampusX.Models.Report", b =>
                 {
                     b.HasOne("CampusX.Models.ApplicationUser", "Reporter")
@@ -282,6 +366,8 @@ namespace CampusX.Data.Migrations
 
                     b.Navigation("Products");
 
+                    b.Navigation("PromotionCreditPurchases");
+
                     b.Navigation("ReportsSubmitted");
                 });
 
@@ -293,6 +379,8 @@ namespace CampusX.Data.Migrations
             modelBuilder.Entity("CampusX.Models.Product", b =>
                 {
                     b.Navigation("Inquiries");
+
+                    b.Navigation("Promotions");
 
                     b.Navigation("Reports");
                 });

@@ -5,7 +5,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - CampusX</title>
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("campusx-theme") === "dark") {
+                    document.documentElement.dataset.theme = "dark";
+                }
+            } catch { }
+        }());
+    </script>    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
     <header class="site-header">
@@ -22,14 +30,27 @@
                 <button type="submit">Search</button>
             </form>
 
-            <div class="header-actions" aria-label="Account features coming soon">
-                <span class="header-icon" aria-label="Notifications coming soon" title="Notifications coming soon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path d="M10 21h4" /></svg>
-                </span>
-                <span class="profile-placeholder" aria-label="Profile coming soon" title="Profile coming soon">
-                    <span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5.5 20c.6-3.3 3-5 6.5-5s5.9 1.7 6.5 5" /></svg></span>
-                    <span class="profile-label">Profile <small>Coming soon</small></span>
-                </span>
+            <div class="header-actions" aria-label="Account actions">
+                <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+                    <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M21.5 12h-2M4.5 12h-2M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4M18.7 18.7l-1.4-1.4M6.7 6.7 5.3 5.3" /></svg>
+                    <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M20.4 14.6A8.5 8.5 0 0 1 9.4 3.6 8.5 8.5 0 1 0 20.4 14.6Z" /></svg>
+                    <span class="visually-hidden">Toggle color theme</span>
+                </button>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <span class="profile-placeholder" aria-label="Signed in as @User.Identity.Name">
+                        <span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.5" /><path d="M5.5 20c.6-3.3 3-5 6.5-5s5.9 1.7 6.5 5" /></svg></span>
+                        <span class="profile-label">@User.Identity.Name<small>Signed in</small></span>
+                    </span>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="logout-form">
+                        <button type="submit" class="header-auth-link">Log out</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="header-auth-link header-signup-link" asp-controller="Account" asp-action="SignUp">Sign up</a>
+                    <a class="header-auth-link" asp-controller="Account" asp-action="Login">Log in</a>
+                }
             </div>
         </nav>
     </header>
@@ -46,6 +67,10 @@
                             <li><a class="sidebar-link" asp-controller="Home" asp-action="Index"><span class="nav-icon" aria-hidden="true">▦</span> Browse Products</a></li>
                             <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">▤</span> My Products <small>Soon</small></span></li>
                             <li><a class="sidebar-link" asp-controller="Products" asp-action="Add"><span class="nav-icon" aria-hidden="true">＋</span> Add Product</a></li>
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <li><a class="sidebar-link" asp-controller="Revenue" asp-action="Index"><span class="nav-icon" aria-hidden="true">★</span> Plans &amp; Subscriptions</a></li>
+                            }
                             <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">♡</span> Favorites <small>Soon</small></span></li>
                         </ul>
                     </nav>
@@ -75,7 +100,6 @@
                         <button type="submit" form="search-form" class="filter-apply">Apply filters</button>
                         <a class="filter-clear" asp-controller="Home" asp-action="Index">Clear all</a>
                     </div>
-                    <div class="sidebar-note"><span aria-hidden="true">✦</span><span>Find what you need, right here on campus.</span></div>
                 </div>
             </div>
         </aside>
@@ -84,7 +108,7 @@
     </div>
 
     <footer class="site-footer"><span>© @DateTime.Now.Year CampusX</span><span>Made for campus life</span></footer>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
-

@@ -16,6 +16,7 @@ public class ProductBL
         if (minPrice < 0 || maxPrice < 0 || (minPrice.HasValue && maxPrice < minPrice))
             throw new ArgumentException("Invalid price range.");
 
+        var now = DateTime.UtcNow;
         var products = _context.Products.AsNoTracking()
             .Include(product => product.Category)
             .Include(product => product.Seller)
@@ -30,15 +31,27 @@ public class ProductBL
         if (maxPrice.HasValue)
             products = products.Where(product => product.Price <= maxPrice.Value);
 
-       
-        if (sortBy == "price_asc")
-            products = products.OrderBy(product => product.Price);
-        else if (sortBy == "price_desc")
-            products = products.OrderByDescending(product => product.Price);
-        else
-            products = products.OrderByDescending(product => product.CreatedAt);
-
-        return products.ToList();
+        return sortBy switch
+        {
+            "price_asc" => products
+                .OrderByDescending(product => product.Promotions.Any(promotion => promotion.ExpiresAt > now))
+                .ThenBy(product => product.Price)
+                .ThenByDescending(product => product.Promotions.Where(promotion => promotion.ExpiresAt > now)
+                    .Select(promotion => (DateTime?)promotion.ActivatedAt).Max())
+                .ToList(),
+            "price_desc" => products
+                .OrderByDescending(product => product.Promotions.Any(promotion => promotion.ExpiresAt > now))
+                .ThenByDescending(product => product.Price)
+                .ThenByDescending(product => product.Promotions.Where(promotion => promotion.ExpiresAt > now)
+                    .Select(promotion => (DateTime?)promotion.ActivatedAt).Max())
+                .ToList(),
+            _ => products
+                .OrderByDescending(product => product.Promotions.Any(promotion => promotion.ExpiresAt > now))
+                .ThenByDescending(product => product.Promotions.Where(promotion => promotion.ExpiresAt > now)
+                    .Select(promotion => (DateTime?)promotion.ActivatedAt).Max())
+                .ThenByDescending(product => product.CreatedAt)
+                .ToList()
+        };
     }
 
     public Product? GetById(Guid id) =>
@@ -91,10 +104,8 @@ public class ProductBL
     public void DeleteById(Guid pid)
     {
         var product = _context.Products.Find(pid);
-
         if (product is null || product.IsDeleted)
             throw new InvalidOperationException("Product was not found or has already been deleted.");
-
         product.IsDeleted = true;
         _context.SaveChanges();
     }
@@ -103,7 +114,6 @@ public class ProductBL
     {
         if (_context.ApplicationUsers.Find(adminId)?.Role != UserRole.Admin)
             throw new UnauthorizedAccessException("Admin access is required.");
-
         var product = _context.Products.Find(productId)
             ?? throw new InvalidOperationException("Product not found.");
         product.IsDeleted = true;

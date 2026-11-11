@@ -1,0 +1,79 @@
+@model CampusX.ViewModel.RevenueDashboardViewModel
+
+@{
+    ViewData["Title"] = "Plans & Subscriptions";
+}
+
+<section class="revenue-dashboard" aria-labelledby="revenue-title">
+    <div class="revenue-heading">
+        <div>
+            <span class="section-eyebrow">CAMPUSX PLANS</span>
+            <h1 id="revenue-title">Credits &amp; Promotions</h1>
+            <p>Choose a one-time credit package to promote your available products. No recurring subscription is charged.</p>
+        </div>
+        <div class="credit-balance"><span>Available credits</span><strong>@Model.AvailableCredits</strong></div>
+    </div>
+
+    @if (TempData["RevenueSuccess"] is string success)
+    {
+        <p class="revenue-message revenue-success" role="status">@success</p>
+    }
+    @if (TempData["RevenueError"] is string error)
+    {
+        <p class="revenue-message revenue-error" role="alert">@error</p>
+    }
+
+    <section class="revenue-section" aria-labelledby="packages-title">
+        <h2 id="packages-title">Buy promotion credits</h2>
+        <p class="revenue-help">Payments are simulated in development. Unused credits do not expire.</p>
+        <div class="package-grid">
+            @foreach (var package in Model.Packages)
+            {
+                <article class="credit-package">
+                    <h3>@package.Package</h3>
+                    <strong>@package.Credits credits</strong>
+                    <p>@package.Price.ToString("N2") EGP</p>
+                    <form asp-action="Purchase" method="post">
+                        <button name="package" value="@package.Package" type="submit" class="btn-save-custom">Buy credits</button>
+                    </form>
+                </article>
+            }
+        </div>
+    </section>
+
+    <section class="revenue-section" aria-labelledby="promote-title">
+        <h2 id="promote-title">Promote your products</h2>
+        <p class="revenue-help">One credit promotes one Available product. Active promotions cannot be extended.</p>
+        @if (Model.Products.Count == 0)
+        {
+            <div class="revenue-empty">You have no Available products to promote.</div>
+        }
+        else
+        {
+            <div class="promotion-list">
+                @foreach (var product in Model.Products)
+                {
+                    <article class="promotion-product">
+                        <div>
+                            <h3>@product.Name</h3>
+                            <p>@product.Price.ToString("N2") EGP</p>
+                        </div>
+                        @if (product.PromotionExpiresAt is DateTime expiresAt)
+                        {
+                            <span class="promotion-active">Featured until @expiresAt.ToLocalTime().ToString("dd MMM yyyy")</span>
+                        }
+                        else
+                        {
+                            <form asp-action="Promote" method="post">
+                                <input type="hidden" name="productId" value="@product.Id" />
+                                <button type="submit" class="btn-save-custom">Promote for 1 credit</button>
+                            </form>
+                        }
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <p class="revenue-commission">Seller commission: @Model.CommissionRatePercent.ToString("N2")% of a completed sale. Collection begins only when verified payments are available.</p>
+</section>

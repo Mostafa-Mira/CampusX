@@ -24,6 +24,7 @@ namespace CampusX.Models
         public ICollection<Product> Products { get; set; } = new List<Product>();
         public ICollection<Report> ReportsSubmitted { get; set; } = new List<Report>();
         public ICollection<ContactInquiry> BuyerInquiries { get; set; } = new List<ContactInquiry>();
+        public ICollection<PromotionCreditPurchase> PromotionCreditPurchases { get; set; } = new List<PromotionCreditPurchase>();
 
         // Behaviors
         public void SetPassword(string password)

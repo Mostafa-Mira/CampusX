@@ -4,3 +4,5 @@ bin/
 obj/
 .codex-tools/
 *.sln.DotSettings.user
+
+.codex/

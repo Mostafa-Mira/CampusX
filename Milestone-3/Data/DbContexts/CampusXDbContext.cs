@@ -12,6 +12,8 @@ public class CampusXDbContext : DbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<ContactInquiry> ContactInquiries => Set<ContactInquiry>();
+    public DbSet<PromotionCreditPurchase> PromotionCreditPurchases => Set<PromotionCreditPurchase>();
+    public DbSet<ProductPromotion> ProductPromotions => Set<ProductPromotion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

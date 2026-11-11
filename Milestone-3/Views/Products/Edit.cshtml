@@ -1,4 +1,4 @@
-﻿@model CampusX.ViewModel.AddProductViewModel
+@model CampusX.ViewModel.AddProductViewModel
 
 @{
     ViewData["Title"] = "Edit Product";
@@ -64,7 +64,7 @@
                 <label for="customFile" style="background: #f6f8fa; color: #24292f; padding: 10px 16px; font-weight: 500; font-size: 14px; border-right: 1px solid #d0d7de; cursor: pointer; margin-bottom: 0;">
                     Browse...
                 </label>
-                <input asp-for="ImageFile" id="customFile" type="file" style="display: none;" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0] ? this.files[0].name : 'No file chosen';" />
+                <input asp-for="ImageFile" id="customFile" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" style="display: none;" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0] ? this.files[0].name : 'No file chosen';" />
                 <span id="fileNameDisplay" style="padding: 0 14px; color: #57606a; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     No file chosen
                 </span>

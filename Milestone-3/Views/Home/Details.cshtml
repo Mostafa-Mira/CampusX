@@ -18,11 +18,11 @@
             @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
             {
                 <img src="@Model.ImageUrl" alt="@Model.Name" onerror="this.hidden=true; this.nextElementSibling.hidden=false;" />
-                <div class="product-details-placeholder" hidden role="img" aria-label="Image unavailable for @Model.Name"><span aria-hidden="true">▦</span><span>Image unavailable</span></div>
+                <div class="product-details-placeholder" hidden role="img" aria-label="No image available for @Model.Name"><span aria-hidden="true">▦</span><span>No image available</span></div>
             }
             else
             {
-                <img src="~/images/products/campusx-product-fallback.png" alt="CampusX marketplace products" />
+                <div class="product-details-placeholder" role="img" aria-label="No image available for @Model.Name"><span aria-hidden="true">▦</span><span>No image available</span></div>
             }
         </div>
 

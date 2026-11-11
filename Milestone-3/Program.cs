@@ -2,10 +2,24 @@ using CampusX.Data.DbContexts;
 using CampusX.Data.Development;
 using CampusX.Data.Seed;
 using CampusX.Models;
+using CampusX.Options;
+using CampusX.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.Cookie.Name = "CampusX.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+    });
 builder.Services.AddDbContext<CampusXDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CampusXDb")));
 builder.Services.AddScoped<ApplicationUserBL>();
@@ -13,6 +27,10 @@ builder.Services.AddScoped<CategoryBL>();
 builder.Services.AddScoped<ProductBL>();
 builder.Services.AddScoped<ReportBL>();
 builder.Services.AddScoped<ContactInquiryBL>();
+builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
+builder.Services.Configure<UniversityEmailOptions>(builder.Configuration.GetSection(UniversityEmailOptions.SectionName));
+builder.Services.AddScoped<IPaymentProvider, SimulatedPaymentProvider>();
+builder.Services.AddScoped<RevenueBL>();
 
 var app = builder.Build();
 
@@ -52,6 +70,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
 app.Run();

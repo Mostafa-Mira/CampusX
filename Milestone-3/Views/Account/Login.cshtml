@@ -1,0 +1,35 @@
+@model CampusX.ViewModel.LoginViewModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<section class="login-panel" aria-labelledby="login-title">
+    <div class="login-card">
+        <span class="section-eyebrow">CAMPUSX ACCOUNT</span>
+        <h1 id="login-title">Welcome back</h1>
+        <p>Sign in to manage your CampusX account.</p>
+
+        @if (TempData["AccountMessage"] is string accountMessage)
+        {
+            <p class="account-success" role="status">@accountMessage</p>
+        }
+
+        <form asp-action="Login" method="post">
+            <input asp-for="ReturnUrl" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="login-error" role="alert"></div>
+
+            <div class="login-field">
+                <label asp-for="Email">Email</label>
+                <input asp-for="Email" autocomplete="email" />
+                <span asp-validation-for="Email" class="login-error"></span>
+            </div>
+            <div class="login-field">
+                <label asp-for="Password">Password</label>
+                <input asp-for="Password" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="login-error"></span>
+            </div>
+            <button class="btn-save-custom login-submit" type="submit">Log in</button>
+        </form>
+    </div>
+</section>

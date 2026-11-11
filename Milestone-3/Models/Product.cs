@@ -28,6 +28,7 @@ namespace CampusX.Models
         public Category Category { get; set; } = null!;
         public ICollection<Report> Reports { get; set; } = new List<Report>();
         public ICollection<ContactInquiry> Inquiries { get; set; } = new List<ContactInquiry>();
+        public ICollection<ProductPromotion> Promotions { get; set; } = new List<ProductPromotion>();
 
         public void UpdateDetails(string name, string description, decimal price, string imageUrl, Guid categoryId)
         {

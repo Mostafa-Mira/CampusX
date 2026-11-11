@@ -9,7 +9,10 @@
             }
             else
             {
-                <img src="~/images/products/campusx-product-fallback.png" alt="CampusX marketplace products" loading="lazy" />
+                <div class="product-image-placeholder" role="img" aria-label="No image available for @Model.Name">
+                    <span aria-hidden="true">▦</span>
+                    <span>No image available</span>
+                </div>
             }
         </div>
         <div class="product-body">

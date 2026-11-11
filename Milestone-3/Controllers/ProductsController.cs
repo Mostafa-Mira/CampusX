@@ -3,6 +3,11 @@ using CampusX.Models;
 using CampusX.ViewModel;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using CampusX.Options;
+using CampusX.Enums;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,16 +26,24 @@ namespace CampusX.Controllers
 
         private readonly CampusXDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly RevenueOptions _revenueOptions;
 
-        public ProductsController(CampusXDbContext context, IWebHostEnvironment webHostEnvironment)
+        public ProductsController(CampusXDbContext context, IWebHostEnvironment webHostEnvironment, IOptions<RevenueOptions> revenueOptions)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
+            _revenueOptions = revenueOptions.Value;
         }
 
+        [Authorize]
         [HttpGet]
-        public IActionResult Add() => View();
+        public IActionResult Add()
+        {
+            ViewBag.CommissionRatePercent = _revenueOptions.CommissionRatePercent;
+            return View();
+        }
 
+        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Add(AddProductViewModel model)
@@ -57,19 +70,12 @@ namespace CampusX.Controllers
                 }
             }
 
-            var defaultUser = _context.ApplicationUsers.FirstOrDefault();
-            if (defaultUser == null)
-            {
-                defaultUser = new ApplicationUser
-                {
-                    FullName = "Test Student",
-                    Email = "student@campusx.com",
-                    CollegeName = "General"
-                };
-                defaultUser.SetPassword("Password123!");
-                _context.ApplicationUsers.Add(defaultUser);
-            }
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var studentId))
+                return Forbid();
 
+            var student = await _context.ApplicationUsers.FindAsync(studentId);
+            if (student?.Role != UserRole.Student || student.IsBlocked)
+                return Forbid();
             string categoryName = model.Category.Trim();
             var category = _context.Categories.FirstOrDefault(category => category.Name == categoryName);
             if (category == null)
@@ -87,7 +93,7 @@ namespace CampusX.Controllers
                 College = string.IsNullOrWhiteSpace(model.College) ? "General" : model.College,
                 PhoneNumber = model.PhoneNumber,
                 ImageUrl = imageUrl,
-                SellerId = defaultUser.Id
+                SellerId = studentId
             };
 
             _context.Products.Add(product);
@@ -208,26 +214,50 @@ namespace CampusX.Controllers
 
         private async Task<string> SaveProductImageAsync(IFormFile imageFile)
         {
-            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
-            Directory.CreateDirectory(uploadsFolder);
-
-            string extension = Path.GetExtension(Path.GetFileName(imageFile.FileName)).ToLowerInvariant();
-            string fileName = $"{Guid.NewGuid():N}{extension}";
-            string filePath = Path.Combine(uploadsFolder, fileName);
+            string? filePath = null;
 
             try
             {
+                if (string.IsNullOrWhiteSpace(_webHostEnvironment.WebRootPath))
+                    throw new IOException("The application's web root directory is unavailable.");
+
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+                Directory.CreateDirectory(uploadsFolder);
+
+                string extension = Path.GetExtension(Path.GetFileName(imageFile.FileName)).ToLowerInvariant();
+                string fileName = $"{Guid.NewGuid():N}{extension}";
+                filePath = Path.Combine(uploadsFolder, fileName);
+
                 await using var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
                 await imageFile.CopyToAsync(fileStream);
+
+                return $"/images/products/{fileName}";
             }
             catch
             {
-                if (System.IO.File.Exists(filePath))
-                    System.IO.File.Delete(filePath);
+                TryDeleteIncompleteImage(filePath);
                 throw;
             }
+        }
 
-            return $"/images/products/{fileName}";
+        private static void TryDeleteIncompleteImage(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return;
+
+            try
+            {
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+            }
+            catch (IOException)
+            {
+                // Preserve the original upload failure; a later manual cleanup can remove any partial file.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Preserve the original upload failure; a later manual cleanup can remove any partial file.
+            }
         }
     }
 }
