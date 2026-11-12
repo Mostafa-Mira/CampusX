@@ -8,7 +8,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddControllersWithViews();
+
+// تسجيل الـ AutoMapper هنا
+builder.Services.AddAutoMapper(typeof(Program));
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -20,13 +25,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
     });
+
 builder.Services.AddDbContext<CampusXDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CampusXDb")));
+
 builder.Services.AddScoped<ApplicationUserBL>();
 builder.Services.AddScoped<CategoryBL>();
 builder.Services.AddScoped<ProductBL>();
 builder.Services.AddScoped<ReportBL>();
 builder.Services.AddScoped<ContactInquiryBL>();
+
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
 builder.Services.Configure<UniversityEmailOptions>(builder.Configuration.GetSection(UniversityEmailOptions.SectionName));
 builder.Services.AddScoped<IPaymentProvider, SimulatedPaymentProvider>();
@@ -41,7 +49,6 @@ if (app.Environment.IsDevelopment())
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
-        // In Development, create the database if needed and bring it up to the current schema.
         db.Database.Migrate();
         SampleProductSeeder.Seed(db);
     }
@@ -69,8 +76,17 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+
 app.Run();
+// للتأكد من صحة الـ Mappings
+var mapper = app.Services.GetRequiredService<AutoMapper.IMapper>();
+mapper.ConfigurationProvider.AssertConfigurationIsValid();

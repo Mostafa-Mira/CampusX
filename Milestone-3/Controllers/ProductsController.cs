@@ -8,6 +8,7 @@ using CampusX.Enums;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
+using AutoMapper; // أضفنا مكتبة الـ AutoMapper هنا
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,12 +28,18 @@ namespace CampusX.Controllers
         private readonly CampusXDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly RevenueOptions _revenueOptions;
+        private readonly IMapper _mapper; // متغير الـ AutoMapper
 
-        public ProductsController(CampusXDbContext context, IWebHostEnvironment webHostEnvironment, IOptions<RevenueOptions> revenueOptions)
+        public ProductsController(
+            CampusXDbContext context,
+            IWebHostEnvironment webHostEnvironment,
+            IOptions<RevenueOptions> revenueOptions,
+            IMapper mapper) // حقن الـ IMapper في الكونستركتور
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
             _revenueOptions = revenueOptions.Value;
+            _mapper = mapper;
         }
 
         [Authorize]
@@ -76,6 +83,7 @@ namespace CampusX.Controllers
             var student = await _context.ApplicationUsers.FindAsync(studentId);
             if (student?.Role != UserRole.Student || student.IsBlocked)
                 return Forbid();
+
             string categoryName = model.Category.Trim();
             var category = _context.Categories.FirstOrDefault(category => category.Name == categoryName);
             if (category == null)
@@ -84,17 +92,14 @@ namespace CampusX.Controllers
                 _context.Categories.Add(category);
             }
 
-            var product = new Product
-            {
-                Name = model.Name,
-                Description = model.Description,
-                Price = model.Price,
-                CategoryId = category.Id,
-                College = string.IsNullOrWhiteSpace(model.College) ? "General" : model.College,
-                PhoneNumber = model.PhoneNumber,
-                ImageUrl = imageUrl,
-                SellerId = studentId
-            };
+            // استخدام AutoMapper لإنشاء كائن الـ Product وتحويل البيانات الأساسية تلقائياً
+            var product = _mapper.Map<Product>(model);
+
+            // استكمال الخصائص التي تتطلب منطق خاص (Logic)
+            product.CategoryId = category.Id;
+            product.College = string.IsNullOrWhiteSpace(model.College) ? "General" : model.College;
+            product.ImageUrl = imageUrl;
+            product.SellerId = studentId;
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
@@ -113,19 +118,14 @@ namespace CampusX.Controllers
                 return NotFound();
             }
 
-            var viewModel = new AddProductViewModel
-            {
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                Category = _context.Categories.Where(c => c.Id == product.CategoryId).Select(c => c.Name).FirstOrDefault() ?? string.Empty,
-                College = product.College,
-                PhoneNumber = product.PhoneNumber
-            };
+            // استخدام AutoMapper للتحويل من Product إلى AddProductViewModel
+            var viewModel = _mapper.Map<AddProductViewModel>(product);
+
+            // ضبط اسم الكلية والفئة يدوياً للتأكد من مطابقتها للعرض
+            viewModel.Category = _context.Categories.Where(c => c.Id == product.CategoryId).Select(c => c.Name).FirstOrDefault() ?? string.Empty;
 
             ViewBag.ProductId = product.Id;
 
-            // هنا بنوجهه صراحة لملف الـ Edit.cshtml المستقل
             return View("Edit", viewModel);
         }
 
@@ -136,7 +136,6 @@ namespace CampusX.Controllers
             if (!ModelState.IsValid || !TryValidateProductImage(model.ImageFile))
             {
                 ViewBag.ProductId = id;
-                // في حالة وجود خطأ في الـ Validation نرجع لصفحة الـ Edit برضه ومعاها الـ ID
                 return View("Edit", model);
             }
 
@@ -176,12 +175,12 @@ namespace CampusX.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            product.Name = model.Name;
-            product.Description = model.Description;
-            product.Price = model.Price;
+            // استخدام AutoMapper لتحديث بيانات الـ Product من الـ Model
+            _mapper.Map(model, product);
+
+            // الحفاظ على الخصائص الخاصة بالـ System والـ Database
             product.CategoryId = category.Id;
             product.College = string.IsNullOrWhiteSpace(model.College) ? "General" : model.College;
-            product.PhoneNumber = model.PhoneNumber;
             product.ImageUrl = imageUrl;
 
             _context.Products.Update(product);
@@ -252,11 +251,9 @@ namespace CampusX.Controllers
             }
             catch (IOException)
             {
-                // Preserve the original upload failure; a later manual cleanup can remove any partial file.
             }
             catch (UnauthorizedAccessException)
             {
-                // Preserve the original upload failure; a later manual cleanup can remove any partial file.
             }
         }
     }
