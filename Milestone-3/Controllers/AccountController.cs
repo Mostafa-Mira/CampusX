@@ -1,24 +1,20 @@
 using System.Security.Claims;
 using CampusX.Models;
-using CampusX.Options;
 using CampusX.ViewModel;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace CampusX.Controllers;
 
 public class AccountController : Controller
 {
     private readonly ApplicationUserBL _applicationUserBL;
-    private readonly UniversityEmailOptions _universityEmailOptions;
 
-    public AccountController(ApplicationUserBL applicationUserBL, IOptions<UniversityEmailOptions> universityEmailOptions)
+    public AccountController(ApplicationUserBL applicationUserBL)
     {
         _applicationUserBL = applicationUserBL;
-        _universityEmailOptions = universityEmailOptions.Value;
     }
 
     [AllowAnonymous]
@@ -71,13 +67,6 @@ public class AccountController : Controller
     {
         if (!ModelState.IsValid)
             return View(model);
-
-        if (!IsApprovedUniversityEmail(model.Email))
-        {
-            ModelState.AddModelError(nameof(model.Email), "Registration is unavailable until an approved university email domain is configured.");
-            return View(model);
-        }
-
         try
         {
             _applicationUserBL.Register(new ApplicationUser
@@ -93,19 +82,8 @@ public class AccountController : Controller
             return View(model);
         }
 
-        TempData["AccountMessage"] = "Account created. Your university email ownership is not verified in this development version.";
+        TempData["AccountMessage"] = "Account created. You can now sign in.";
         return RedirectToAction(nameof(Login));
-    }
-
-    private bool IsApprovedUniversityEmail(string email)
-    {
-        var atIndex = email.LastIndexOf('@');
-        if (atIndex <= 0 || atIndex == email.Length - 1)
-            return false;
-
-        var domain = email[(atIndex + 1)..].Trim().ToLowerInvariant();
-        return _universityEmailOptions.ApprovedDomains.Any(approved =>
-            string.Equals(approved.Trim().TrimStart('@'), domain, StringComparison.OrdinalIgnoreCase));
     }
 
     [Authorize]

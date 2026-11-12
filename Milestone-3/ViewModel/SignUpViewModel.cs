@@ -11,7 +11,7 @@ public class SignUpViewModel
 
     [Required]
     [EmailAddress]
-    [Display(Name = "University email")]
+    [Display(Name = "Email")]
     public string Email { get; set; } = string.Empty;
 
     [Required]

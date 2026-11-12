@@ -13,7 +13,7 @@
 
 The current SRS has section numbers and named requirements, but no FR, BR, or NFR identifiers. Do not invent IDs or claim ID-level traceability. Read the source for full requirements; preserve these essentials:
 
-- **Registration and Login; Product Management** (SRS §3): validate student registration/login/logout; students add products with name, description, price, category, and image, manage only their own listings, and mark them sold.
+- **Registration and Login; Product Management** (SRS §3): validate student registration/login/logout; current registration accepts any normally valid email address and does not verify university-email ownership. Students add products with name, description, price, category, and image, manage only their own listings, and mark them sold.
 - **Search and Browsing; Product Details; Communication** (§3): browse available products, search/filter by name/category/price, show product fields plus seller information and status, and contact sellers.
 - **Admin Management; student profile and reporting** (§§2, 3, 5): students manage profiles and report inappropriate products; admins manage student accounts/products, remove inappropriate content, handle reported products or users, and monitor the platform.
 - **Performance, Security, Usability, Reliability, Compatibility, Maintainability** (§4): responsive actions/search; secure password storage, owner-only product management and admin-only administration; simple clear UI; consistent user/product data; common browsers and different screen sizes; understandable, maintainable code. No numeric performance targets or exact browser matrix are specified.
