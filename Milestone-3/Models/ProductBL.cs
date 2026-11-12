@@ -96,18 +96,25 @@ public class ProductBL
 
     public void Delete(Guid studentId, Guid productId)
     {
-        var product = GetOwnedProduct(studentId, productId);
-        product.IsDeleted = true;
-        _context.SaveChanges();
-    }
+        var product = _context.Products.Find(productId);
+
+        if (product != null)
+        {
+            _context.Products.Remove(product);
+            _context.SaveChanges();
+        }
+        else
+            return;
+
+}
 
     public void DeleteById(Guid pid)
     {
         var product = _context.Products.Find(pid);
-        if (product is null || product.IsDeleted)
-            throw new InvalidOperationException("Product was not found or has already been deleted.");
-        product.IsDeleted = true;
+        _context.Products.Remove(product);
         _context.SaveChanges();
+
+
     }
 
     public void RemoveByAdmin(Guid adminId, Guid productId)
