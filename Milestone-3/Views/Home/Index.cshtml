@@ -71,12 +71,31 @@
         </div>
     }
 
-    @if (Model.Products.Count == 0)
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
+   
+    }
+    else if (Model.Products.Count == 0)
+    {
+        var hasSearchOrFilters =
+            !string.IsNullOrWhiteSpace(Model.SearchTerm) ||
+            Model.CategoryId.HasValue ||
+            Model.MinPrice.HasValue ||
+            Model.MaxPrice.HasValue;
+
         <div class="empty-state" role="status">
             <div class="empty-icon" aria-hidden="true">▦</div>
-            <h3>No products available yet</h3>
-            <p>Check back soon for new listings from students on campus.</p>
+
+            @if (hasSearchOrFilters)
+            {
+                <h3>No products match your search or filters.</h3>
+                <p>Try changing your search term or adjusting the filters.</p>
+            }
+            else
+            {
+                <h3>No products available yet</h3>
+                <p>Check back soon for new listings from students on campus.</p>
+            }
         </div>
     }
     else
@@ -89,31 +108,3 @@
         </div>
     }
 </section>
-
-<!-- كود JavaScript لتفعيل تابات الفلترة أوتوماتيكياً -->
-<script type="text/javascript">
-    document.addEventListener("DOMContentLoaded", function () {
-        var chips = document.querySelectorAll(".category-chip");
-        var cards = document.querySelectorAll(".product-card");
-
-        chips.forEach(function (chip) {
-            chip.addEventListener("click", function () {
-                chips.forEach(function (c) { c.classList.remove("is-active"); });
-                this.classList.add("is-active");
-
-                var target = this.getAttribute("data-category");
-
-                cards.forEach(function (card) {
-                    var catEl = card.querySelector(".product-category");
-                    var catText = catEl ? catEl.textContent.trim() : "";
-
-                    if (target === "all" || catText === target) {
-                        card.style.display = "block";
-                    } else {
-                        card.style.display = "none";
-                    }
-                });
-            });
-        });
-    });
-</script>
