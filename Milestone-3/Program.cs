@@ -36,7 +36,6 @@ builder.Services.AddScoped<ReportBL>();
 builder.Services.AddScoped<ContactInquiryBL>();
 
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
-builder.Services.Configure<UniversityEmailOptions>(builder.Configuration.GetSection(UniversityEmailOptions.SectionName));
 builder.Services.AddScoped<IPaymentProvider, SimulatedPaymentProvider>();
 builder.Services.AddScoped<RevenueBL>();
 
