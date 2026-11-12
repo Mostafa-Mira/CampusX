@@ -104,6 +104,11 @@ public class AccountController : Controller
             return false;
 
         var domain = email[(atIndex + 1)..].Trim().ToLowerInvariant();
+
+        // السماح لدومين الكلية الخاص بك مباشرة لكي يعمل التسجيل بسلاسة
+        if (domain == "cs.modern-academy.edu.eg")
+            return true;
+
         return _universityEmailOptions.ApprovedDomains.Any(approved =>
             string.Equals(approved.Trim().TrimStart('@'), domain, StringComparison.OrdinalIgnoreCase));
     }
