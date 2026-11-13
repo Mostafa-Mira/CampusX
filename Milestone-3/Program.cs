@@ -41,7 +41,9 @@ builder.Services.AddScoped<RevenueBL>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Shared team databases must be migrated separately and must not receive development seed data.
+var useSharedDatabase = app.Configuration.GetValue<bool>("DatabaseStartup:UseSharedDatabase");
+if (app.Environment.IsDevelopment() && !useSharedDatabase)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CampusXDbContext>();
