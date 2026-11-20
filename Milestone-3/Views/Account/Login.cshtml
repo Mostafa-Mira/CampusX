@@ -32,6 +32,7 @@
                 <input asp-for="Password" autocomplete="current-password" aria-describedby="login-password-error" required />
                 <span asp-validation-for="Password" id="login-password-error" class="login-error" role="alert"></span>
             </div>
+            <div class="login-recovery"><a asp-action="ForgotPassword">Forgot password?</a></div>
             <button class="btn-save-custom login-submit" type="submit">Log in</button>
         </form>
         <partial name="_GoogleSignIn" model="Model.ReturnUrl" />

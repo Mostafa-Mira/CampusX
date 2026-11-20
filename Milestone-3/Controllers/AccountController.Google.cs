@@ -251,7 +251,7 @@ public partial class AccountController
     }
 
     private Task<IActionResult> ExistingGoogleEmailAsync() => GoogleFailureAsync(
-        "An account already uses this login email. Log in with your CampusX password, then use Link Google account on the University Email page.");
+        "We couldn’t sign you in with this Google account. Use your original sign-in method or choose Forgot password.");
 
     private async Task<IActionResult> GoogleFailureAsync(string message, bool linking = false)
     {

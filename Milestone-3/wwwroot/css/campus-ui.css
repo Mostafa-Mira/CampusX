@@ -201,6 +201,8 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .auth-page button.login-submit:disabled { background: var(--mint-100); color: var(--muted); opacity: 1; }
 .auth-page .header-actions { flex-wrap: wrap; }
 .auth-page .account-switch { padding-top: 18px; border-top: 1px solid var(--line); text-wrap: balance; }
+.login-recovery { display: flex; justify-content: flex-end; margin: -8px 0 8px; }
+.login-recovery a { display: inline-flex; align-items: center; min-height: 44px; color: var(--green-800); font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .auth-return-link { display: inline-flex; align-items: center; }
 .auth-alternative { margin-top: 18px; }
 .auth-divider { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; color: var(--muted); font-size: 13px; }

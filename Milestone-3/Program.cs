@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.Extensions.FileProviders;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,29 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddSignInManager()
     .AddDefaultTokenProviders()
     .AddClaimsPrincipalFactory<CampusXUserClaimsPrincipalFactory>();
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = PasswordRecoveryBL.Lifetime);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var wait))
+            context.HttpContext.Response.Headers.RetryAfter =
+                ((int)Math.Ceiling(wait.TotalSeconds)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        await context.HttpContext.Response.WriteAsync("Too many recovery attempts. Wait a few minutes and try again.", cancellationToken);
+    };
+    foreach (var (policy, limit) in new[] { (PasswordRecoveryQueue.RequestPolicy, 10), (PasswordRecoveryQueue.ResetPolicy, 15) })
+    {
+        options.AddPolicy(policy, context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = limit,
+                Window = TimeSpan.FromMinutes(5),
+                QueueLimit = 0
+            }));
+    }
+});
 
 var authentication = builder.Services.AddAuthentication(options =>
     {
@@ -102,7 +126,12 @@ builder.Services.AddScoped<ProductBL>();
 builder.Services.AddScoped<ReportBL>();
 builder.Services.AddScoped<ContactInquiryBL>();
 builder.Services.Configure<EmailSmtpOptions>(builder.Configuration.GetSection(EmailSmtpOptions.SectionName));
-builder.Services.AddScoped<IUniversityEmailSender, GmailUniversityEmailSender>();
+builder.Services.AddScoped<GmailUniversityEmailSender>();
+builder.Services.AddScoped<IUniversityEmailSender>(services => services.GetRequiredService<GmailUniversityEmailSender>());
+builder.Services.AddScoped<IPasswordRecoveryEmailSender>(services => services.GetRequiredService<GmailUniversityEmailSender>());
+builder.Services.AddScoped<PasswordRecoveryBL>();
+builder.Services.AddSingleton<PasswordRecoveryQueue>();
+builder.Services.AddHostedService(services => services.GetRequiredService<PasswordRecoveryQueue>());
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<UniversityEmailVerificationBL>();
 
@@ -166,6 +195,7 @@ app.Use(async (context, next) =>
     await next();
 });
 app.UseAuthorization();
+app.UseRateLimiter();
 // Remaining files, including /images/products, pass the same eligibility policy as MVC routes.
 app.UseStaticFiles();
 
