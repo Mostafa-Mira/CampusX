@@ -68,6 +68,7 @@ public class ProductBL
 
     public List<Product> GetBySeller(Guid sellerId) =>
         _context.Products.AsNoTracking()
+            .Include(product => product.Category)
             .Where(product => product.SellerId == sellerId && !product.IsDeleted)
             .OrderByDescending(product => product.CreatedAt)
             .ToList();

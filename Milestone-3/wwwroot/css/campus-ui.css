@@ -281,3 +281,24 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
     .hero h1 { font-size: 27px; }
     .product-meta { font-size: 11px; }
 }
+/* My Products page */
+.my-product-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+    .my-product-item .details-label-row {
+        margin: 0;
+    }
+
+    .my-product-item .product-card {
+        flex: 1;
+    }
+
+.my-product-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 4px;
+}

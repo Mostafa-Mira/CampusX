@@ -14,6 +14,7 @@
     var route = ViewContext.RouteData.Values;
     var isHome = string.Equals(route["controller"]?.ToString(), "Home", StringComparison.OrdinalIgnoreCase) &&
         string.Equals(route["action"]?.ToString(), "Index", StringComparison.OrdinalIgnoreCase);
+    var isMyProducts = string.Equals(route["controller"]?.ToString(), "MyProducts", StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="en">
