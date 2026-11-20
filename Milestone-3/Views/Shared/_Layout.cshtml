@@ -2,8 +2,15 @@
 @using Microsoft.AspNetCore.Authorization
 @inject CampusX.Models.CategoryBL LayoutCategoryBL
 @inject IAuthorizationService Authorization
+@inject MarketplaceAccessHandler MarketplaceAccess
+@inject DevelopmentTesterAccess TesterAccess
 @{
     var isStudent = (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Student)).Succeeded;
+    var isTester = isStudent && User.HasClaim(DevelopmentTesterAccess.ClaimType, DevelopmentTesterAccess.ClaimValue) &&
+        await MarketplaceAccess.GetStatusAsync(User) == MarketplaceAccessStatus.DevelopmentTester;
+    var accountStatus = "Signed in";
+    if (isTester)
+        accountStatus = TesterAccess.SharedMode ? "Team tester" : "Local tester";
     var route = ViewContext.RouteData.Values;
     var isHome = string.Equals(route["controller"]?.ToString(), "Home", StringComparison.OrdinalIgnoreCase) &&
         string.Equals(route["action"]?.ToString(), "Index", StringComparison.OrdinalIgnoreCase);
@@ -51,9 +58,9 @@
                 </button>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
-                    <span class="profile-placeholder" aria-label="Signed in as @User.Identity.Name">
+                    <span class="profile-placeholder" aria-label="Signed in as @User.Identity.Name. @accountStatus.">
                         <span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.5" /><path d="M5.5 20c.6-3.3 3-5 6.5-5s5.9 1.7 6.5 5" /></svg></span>
-                        <span class="profile-label">@User.Identity.Name<small>Signed in</small></span>
+                        <span class="profile-label">@User.Identity.Name<small>@accountStatus</small></span>
                     </span>
                     <form asp-controller="Account" asp-action="Logout" method="post" class="logout-form">
                         <button type="submit" class="header-auth-link">Log out</button>

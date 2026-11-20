@@ -8,6 +8,17 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "CampusX Team Test": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7148",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DevelopmentTesterAccess__TeamTestProfile": "true",
+        "DatabaseStartup__UseSharedDatabase": "true"
+      }
     }
   }
 }

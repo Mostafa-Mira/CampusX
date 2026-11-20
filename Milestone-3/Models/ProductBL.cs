@@ -1,5 +1,6 @@
 using CampusX.Data.DbContexts;
 using CampusX.Enums;
+using CampusX.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampusX.Models;
@@ -7,8 +8,13 @@ namespace CampusX.Models;
 public class ProductBL
 {
     private readonly CampusXDbContext _context;
+    private readonly DevelopmentTesterAccess _testerAccess;
 
-    public ProductBL(CampusXDbContext context) => _context = context;
+    public ProductBL(CampusXDbContext context, DevelopmentTesterAccess testerAccess)
+    {
+        _context = context;
+        _testerAccess = testerAccess;
+    }
 
     public List<Product> GetAvailable(string? name = null, Guid? categoryId = null,
         decimal? minPrice = null, decimal? maxPrice = null, string? sortBy = null)
@@ -68,7 +74,7 @@ public class ProductBL
 
     public Product Add(Guid studentId, Product product)
     {
-        ApplicationUserBL.RequireEligibleRole(_context, studentId, UserRole.Student);
+        ApplicationUserBL.RequireEligibleRole(_context, studentId, UserRole.Student, _testerAccess);
         ValidateDetails(product.Name, product.Price, product.CategoryId);
         product.SellerId = studentId;
         product.Status = ProductStatus.Available;
@@ -111,7 +117,7 @@ public class ProductBL
 
     private Product GetOwnedProduct(Guid studentId, Guid productId)
     {
-        ApplicationUserBL.RequireEligibleRole(_context, studentId, UserRole.Student);
+        ApplicationUserBL.RequireEligibleRole(_context, studentId, UserRole.Student, _testerAccess);
         var product = GetExistingProduct(productId);
         if (product.SellerId != studentId)
             throw new UnauthorizedAccessException("Only the seller can manage this product.");

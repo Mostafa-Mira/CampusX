@@ -1,5 +1,6 @@
 using CampusX.Data.DbContexts;
 using CampusX.Enums;
+using CampusX.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
@@ -122,15 +123,17 @@ public class ApplicationUserBL
     internal static void RequireEligibleAdmin(CampusXDbContext context, Guid adminId) =>
         RequireEligibleRole(context, adminId, UserRole.Admin);
 
-    internal static void RequireEligibleRole(CampusXDbContext context, Guid userId, UserRole role)
+    internal static void RequireEligibleRole(CampusXDbContext context, Guid userId, UserRole role,
+        DevelopmentTesterAccess? testerAccess = null)
     {
         var account = context.ApplicationUsers.AsNoTracking()
             .Where(user => user.Id == userId && user.Role == role && !user.IsBlocked)
-            .Select(user => new { user.UniversityEmail, user.VerifiedUniversityEmail, user.UniversityEmailConfirmed })
+            .Select(user => new { user.Email, user.UniversityEmail, user.VerifiedUniversityEmail, user.UniversityEmailConfirmed })
             .SingleOrDefault();
 
-        if (account is null || !StudentUniversities.HasVerifiedEmail(
-            account.UniversityEmail, account.VerifiedUniversityEmail, account.UniversityEmailConfirmed))
+        if (account is null || (!StudentUniversities.HasVerifiedEmail(
+            account.UniversityEmail, account.VerifiedUniversityEmail, account.UniversityEmailConfirmed) &&
+            testerAccess?.IsAllowed(userId, role, account.Email) != true))
             throw new UnauthorizedAccessException($"Verified {role.ToString().ToLowerInvariant()} access is required.");
     }
 }

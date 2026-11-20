@@ -10,10 +10,35 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.FileProviders;
 using System.Threading.RateLimiting;
 
-var builder = WebApplication.CreateBuilder(args);
+var provisionTester = args.Contains(DevelopmentTesterProvisioner.Command, StringComparer.Ordinal);
+var provisionSharedTester = args.Contains(DevelopmentTesterProvisioner.SharedCommand, StringComparer.Ordinal);
+if (provisionTester && provisionSharedTester)
+    throw new InvalidOperationException("Choose one tester provisioning command.");
+
+var builder = WebApplication.CreateBuilder(args.Where(arg => arg != DevelopmentTesterProvisioner.Command &&
+    arg != DevelopmentTesterProvisioner.SharedCommand).ToArray());
+var sharedTesterProfile = DevelopmentTesterAccess.IsSharedProfile(builder.Environment, builder.Configuration);
+var sharedTesterMode = DevelopmentTesterAccess.IsSharedMode(builder.Environment, builder.Configuration);
+var sharedTesterConnection = sharedTesterMode ? builder.Configuration.GetConnectionString("CampusXDb") : null;
+if (sharedTesterProfile && !provisionTester && !provisionSharedTester)
+{
+    if (!sharedTesterMode)
+        throw new InvalidOperationException("Enable the Team Test profile with the private DevelopmentTesterAccess:AllowSharedDatabase setting.");
+    if (!DevelopmentTesterAccess.UsesApprovedSharedDatabase(builder.Configuration, sharedTesterConnection))
+        throw new InvalidOperationException("Team tester mode requires the approved SQL target and shared startup mode. Network SQL must validate the server certificate.");
+
+    var fingerprint = DevelopmentTesterAccess.GetSharedClientFingerprint(builder.Configuration)
+        ?? throw new InvalidOperationException("Team tester mode requires the local client certificate SHA-256 fingerprint.");
+    builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(7148, listener => listener.UseHttps(https =>
+    {
+        https.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
+        https.ClientCertificateValidation = (certificate, _, _) => DevelopmentTesterAccess.MatchesSharedClient(certificate, fingerprint);
+    })));
+}
 
 builder.Services.AddControllersWithViews();
 
@@ -114,11 +139,13 @@ builder.Services.AddAuthorization(options =>
         policy.AddAuthenticationSchemes(IdentityConstants.ApplicationScheme).RequireAuthenticatedUser());
 });
 builder.Services.AddScoped<MarketplaceAccessHandler>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<DevelopmentTesterAccess>();
 builder.Services.AddScoped<IAuthorizationHandler>(services => services.GetRequiredService<MarketplaceAccessHandler>());
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, MarketplaceAuthorizationResultHandler>();
 
 builder.Services.AddDbContext<CampusXDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("CampusXDb")));
+    options.UseSqlServer(sharedTesterConnection ?? builder.Configuration.GetConnectionString("CampusXDb")));
 
 builder.Services.AddScoped<ApplicationUserBL>();
 builder.Services.AddScoped<CategoryBL>();
@@ -141,9 +168,20 @@ builder.Services.AddScoped<RevenueBL>();
 
 var app = builder.Build();
 
+if (provisionTester || provisionSharedTester)
+{
+    Environment.ExitCode = await DevelopmentTesterProvisioner.RunAsync(app, shared: provisionSharedTester);
+    await app.DisposeAsync();
+    return;
+}
+
+if (!sharedTesterMode && DevelopmentTesterAccess.IsEnabled(app.Environment, app.Configuration) &&
+    !DevelopmentTesterAccess.UsesLocalDatabase(app.Configuration))
+    throw new InvalidOperationException("Development tester access requires a local SQL Server connection.");
+
 // Shared team databases must be migrated separately and must not receive development seed data.
 var useSharedDatabase = app.Configuration.GetValue<bool>("DatabaseStartup:UseSharedDatabase");
-if (app.Environment.IsDevelopment() && !useSharedDatabase)
+if (app.Environment.IsDevelopment() && !useSharedDatabase && !sharedTesterMode)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CampusXDbContext>();

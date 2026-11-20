@@ -16,23 +16,26 @@ public class RevenueBL
     private readonly CampusXDbContext _context;
     private readonly IPaymentProvider _paymentProvider;
     private readonly RevenueOptions _options;
+    private readonly DevelopmentTesterAccess _testerAccess;
 
-    public RevenueBL(CampusXDbContext context, IPaymentProvider paymentProvider, IOptions<RevenueOptions> options)
+    public RevenueBL(CampusXDbContext context, IPaymentProvider paymentProvider, IOptions<RevenueOptions> options,
+        DevelopmentTesterAccess testerAccess)
     {
         _context = context;
         _paymentProvider = paymentProvider;
         _options = options.Value;
+        _testerAccess = testerAccess;
     }
 
     public int GetAvailableCredits(Guid buyerId)
     {
-        ApplicationUserBL.RequireEligibleRole(_context, buyerId, UserRole.Student);
+        ApplicationUserBL.RequireEligibleRole(_context, buyerId, UserRole.Student, _testerAccess);
         return GetAvailableCreditsCore(buyerId);
     }
 
     public PromotionCreditPurchase PurchaseCredits(Guid buyerId, PromotionPackage package)
     {
-        ApplicationUserBL.RequireEligibleRole(_context, buyerId, UserRole.Student);
+        ApplicationUserBL.RequireEligibleRole(_context, buyerId, UserRole.Student, _testerAccess);
         var (credits, amount) = GetPackage(package);
         var payment = _paymentProvider.Charge(buyerId, amount, $"CampusX {package} promotion package");
         if (!payment.IsApproved)
@@ -57,7 +60,7 @@ public class RevenueBL
             throw new InvalidOperationException("Promotion duration must be configured as a positive number of days.");
 
         using var transaction = _context.Database.BeginTransaction(IsolationLevel.Serializable);
-        ApplicationUserBL.RequireEligibleRole(_context, ownerId, UserRole.Student);
+        ApplicationUserBL.RequireEligibleRole(_context, ownerId, UserRole.Student, _testerAccess);
 
         var product = _context.Products.SingleOrDefault(product => product.Id == productId && !product.IsDeleted)
             ?? throw new KeyNotFoundException("Product not found.");
@@ -87,7 +90,7 @@ public class RevenueBL
 
     public List<RevenueProductSummary> GetOwnedAvailableProducts(Guid ownerId)
     {
-        ApplicationUserBL.RequireEligibleRole(_context, ownerId, UserRole.Student);
+        ApplicationUserBL.RequireEligibleRole(_context, ownerId, UserRole.Student, _testerAccess);
         var now = DateTime.UtcNow;
         return _context.Products.AsNoTracking()
             .Where(product => product.SellerId == ownerId && !product.IsDeleted && product.Status == ProductStatus.Available)

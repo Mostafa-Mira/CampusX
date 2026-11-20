@@ -18,13 +18,18 @@ public static class MarketplaceAccessPolicies
 
 public sealed record MarketplaceAccessRequirement(UserRole? RequiredRole = null) : IAuthorizationRequirement;
 
-public enum MarketplaceAccessStatus { Guest, MissingAccount, Blocked, PendingVerification, Eligible }
+public enum MarketplaceAccessStatus { Guest, MissingAccount, Blocked, PendingVerification, Eligible, DevelopmentTester }
 
 public sealed class MarketplaceAccessHandler : AuthorizationHandler<MarketplaceAccessRequirement>
 {
     private readonly CampusXDbContext _context;
+    private readonly DevelopmentTesterAccess _testerAccess;
 
-    public MarketplaceAccessHandler(CampusXDbContext context) => _context = context;
+    public MarketplaceAccessHandler(CampusXDbContext context, DevelopmentTesterAccess testerAccess)
+    {
+        _context = context;
+        _testerAccess = testerAccess;
+    }
 
     public async Task<MarketplaceAccessStatus> GetStatusAsync(ClaimsPrincipal principal) =>
         (await GetAccessAsync(principal)).Status;
@@ -47,23 +52,25 @@ public sealed class MarketplaceAccessHandler : AuthorizationHandler<MarketplaceA
         // The database supplies the current role and eligibility on each authorization check.
         var user = await _context.ApplicationUsers.AsNoTracking()
             .Where(user => user.Id == id)
-            .Select(user => new { user.Role, user.IsBlocked, user.UniversityEmail, user.UniversityEmailConfirmed, user.VerifiedUniversityEmail })
+            .Select(user => new { user.Role, user.IsBlocked, user.Email, user.UniversityEmail, user.UniversityEmailConfirmed, user.VerifiedUniversityEmail })
             .SingleOrDefaultAsync();
 
         if (user is null)
             return (MarketplaceAccessStatus.MissingAccount, null);
         if (user.IsBlocked)
             return (MarketplaceAccessStatus.Blocked, null);
-        return StudentUniversities.HasVerifiedEmail(user.UniversityEmail, user.VerifiedUniversityEmail, user.UniversityEmailConfirmed)
-            ? (MarketplaceAccessStatus.Eligible, user.Role)
-            : (MarketplaceAccessStatus.PendingVerification, null);
+        if (StudentUniversities.HasVerifiedEmail(user.UniversityEmail, user.VerifiedUniversityEmail, user.UniversityEmailConfirmed))
+            return (MarketplaceAccessStatus.Eligible, user.Role);
+        if (await _testerAccess.IsAllowedAsync(id, user.Role, user.Email))
+            return (MarketplaceAccessStatus.DevelopmentTester, user.Role);
+        return (MarketplaceAccessStatus.PendingVerification, null);
     }
 
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context,
         MarketplaceAccessRequirement requirement)
     {
         var (status, role) = await GetAccessAsync(context.User);
-        if (status == MarketplaceAccessStatus.Eligible &&
+        if ((status is MarketplaceAccessStatus.Eligible or MarketplaceAccessStatus.DevelopmentTester) &&
             (requirement.RequiredRole is null || requirement.RequiredRole == role))
             context.Succeed(requirement);
     }
