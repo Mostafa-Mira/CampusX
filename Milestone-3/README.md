@@ -1,12 +1,12 @@
-# CampusX MVC database milestone
+# CampusX MVC
 
 This project is an ASP.NET Core MVC application targeting .NET 8, with EF Core and SQL Server. Its structure follows the instructor's MVC example while retaining CampusX-specific entities.
 
-- `Models/`: the five database entities and matching `*BL` classes for business operations, like the instructor example.
+- `Models/`: application entities and `*BL` classes for business operations.
 - `Data/DbContexts/`: the EF Core context.
 - `Data/Configurations/`: one mapping class per entity.
-- `Data/Migrations/`: the original migration and a follow-up schema correction.
-- `Controllers/` and `Views/`: only a minimal Home scaffold to establish the MVC folders and route; CampusX feature pages are intentionally not built.
+- `Data/Migrations/`: the baseline and subsequent product, revenue, Identity, and verification migrations.
+- `Controllers/` and `Views/`: the MVC account, marketplace, listing, and simulated revenue workflows. See [STATE.md](../STATE.md) for verification, incomplete features, and deployment status.
 
 ## Naming
 
@@ -18,15 +18,21 @@ Use singular PascalCase for entity classes (`Product`), plural DbSet/table names
 
 `ApplicationUser` now inherits from `IdentityUser<Guid>` and remains mapped to `ApplicationUsers`. `CampusXDbContext` uses Identity's user-only store: the existing `UserRole` enum remains the single source of Student/Admin roles, supplied through the CampusX claims factory. No parallel role membership tables or new roles are introduced. Existing MVC account pages/routes are retained; their backend uses `UserManager` and `SignInManager`. Existing cookies require a fresh login after the authentication-scheme cutover.
 
-`Email`/`EmailConfirmed` describe the personal login email only. `UniversityEmail` and `UniversityEmailConfirmed` are separate; old accounts receive no university address and remain unverified. Google login is not implemented. Password acceptance is kept compatible with the prior implementation pending an approved password policy.
+`Email` and `EmailConfirmed` describe the login email. University eligibility uses the separate `UniversityEmail`, `UniversityEmailConfirmed`, and `VerifiedUniversityEmail` fields. The migration leaves existing accounts university-unverified. Password acceptance remains compatible with the prior implementation pending an approved password policy.
 
 The new `20261119142222_IdentityFoundation` migration adds Identity metadata and claim/login/token tables, initializes usernames from the existing GUIDs, backfills normalized login metadata and stamps, and permits a nullable local password hash for future external-login accounts. It preserves existing GUIDs, emails, hashes, enum roles and business foreign keys. Automatic normalization stops for blank/non-ASCII emails, normalized-email collisions, or unknown enum roles; such data needs review instead of being silently changed. Rollback stops if new Identity/university data or passwordless users would be lost.
 
-Before running this version against an existing database, review and apply its schema migration through a coordinated deployment. Do not run the new model against the old schema. Local-copy rehearsal passed; neither the original local database nor the shared MonsterASP.NET database was migrated by this task. Keep shared startup mode enabled and arrange a backup, data preflight and reviewed migration application separately before deploying this version to shared environments. Do not mark old users university-verified to bypass onboarding.
+Before running this version against an existing database, confirm its migration history. Keep shared startup mode enabled and coordinate a backup, data preflight, and reviewed migration application separately. Keep old accounts university-unverified until they complete onboarding. The checked-in `campusx_migrations_review.sql` ends at `AddRevenueSystem` and does not cover the Identity and verification upgrades.
+
+### Google sign-in and account recovery
+
+Set `Authentication:Google:ClientId` and `Authentication:Google:ClientSecret` in private configuration to enable Google OAuth. The callback route is `/signin-google`. The local HTTPS callback is `https://localhost:7148/signin-google`. Google signup still requires university verification. Linking to an existing account requires an authenticated session, explicit confirmation, and the existing password. Matching email alone never links accounts.
+
+Forgot Password uses Gmail SMTP and requires `PasswordRecovery:PublicOrigin` to be an approved HTTPS origin without a path, query, or fragment. Recovery requires a confirmed login email or an already verified university email. If only a different university address is verified, the user needs access to both inboxes. Legacy accounts missing both recovery factors need an approved ownership-verification path before recovery can proceed. Keep Data Protection keys persistent and protected on the host.
 
 ### Marketplace access
 
-The default and fallback authorization policies require an authenticated, existing, unblocked account with a Cairo undergraduate email (exactly 14 ASCII digits at `stud.cu.edu.eg`), `UniversityEmailConfirmed=true`, and a matching `VerifiedUniversityEmail` binding written only after code verification. Eligibility is read from the database on each protected request; personal email confirmation, Google claims and the Admin role do not bypass it. Guests are challenged to Login, unverified accounts go to `/Account/PendingUniversityVerification`, and blocked or missing accounts receive HTTP 403. Do not manually mark accounts verified.
+The default and fallback authorization policies require an authenticated, existing, unblocked account with a Cairo undergraduate email (exactly 14 ASCII digits at `stud.cu.edu.eg`), `UniversityEmailConfirmed=true`, and a matching `VerifiedUniversityEmail` binding written only after code verification. The server checks eligibility and the current role. Personal email confirmation, Google claims, and the Admin role do not confer university eligibility. Guests are challenged to Login, unverified accounts go to `/Account/PendingUniversityVerification`, and blocked or missing accounts receive HTTP 403. The [Development tester setup](#shared-team-tester-access) provides the approved local exception for enrolled Students.
 
 ### University email verification
 
@@ -34,15 +40,15 @@ Cairo undergraduate verification is enabled. Ain Shams, Alexandria and Helwan re
 
 Codes expire after 10 minutes. SQL-backed reservations enforce a 60-second cooldown and five sends/hour per account and recipient, including failed deliveries. Failed checks are limited to five per 15 minutes across resends, email changes and application restarts. Codes use Identity's salted password hasher plus Data Protection and are consumed once. A database-owned application lock and unique indexes serialize races; SMTP runs outside the lock. Keep the hosting Data Protection key ring persistent and protected across deployments. Do not log codes, message bodies or SMTP secrets.
 
-Configure `EmailSmtp:Host` (`smtp.gmail.com`), `EmailSmtp:Port` (`587`), `EmailSmtp:UserName`, `EmailSmtp:AppPassword`, and `EmailSmtp:FromEmail` in User Secrets for local Development or private environment configuration on the host. Environment names use double underscores, such as `EmailSmtp__AppPassword`. Use a Gmail app password with 2-Step Verification, and an authorized sender address. STARTTLS is required; there is no plaintext fallback. Missing configuration or delivery failure leaves the account unverified. Gmail acceptance and actual inbox delivery require separate live verification; no live delivery is claimed by the local tests.
+Configure `EmailSmtp:Host` (`smtp.gmail.com`), `EmailSmtp:Port` (`587`), `EmailSmtp:UserName`, `EmailSmtp:AppPassword`, and `EmailSmtp:FromEmail` in User Secrets for local Development or private environment configuration on the host. Environment names use double underscores, such as `EmailSmtp__AppPassword`. Use a Gmail app password with 2-Step Verification and an authorized sender address. STARTTLS is required. Missing configuration or delivery failure leaves the account unverified. The user confirmed mailbox delivery in earlier local university verification tests. Verify delivery separately for the hosted environment.
 
 The additive `20261119182114_AddUniversityEmailVerification` migration adds the nullable confirmed-address binding, its filtered unique index, and verification/failed-attempt tables. Existing user IDs, password hashes, roles and business relationships are retained; old accounts receive no verified binding. Review and coordinate migration deployment separately before using this version against the shared database. SQL application-lock support must also be available on the deployment database. Shared startup mode must remain enabled; this work does not migrate the shared database.
 
-Login, signup, logout, verification onboarding and safe error pages have explicit exceptions to marketplace eligibility. Their separate layout does not query categories or expose marketplace navigation/data. CSS and JavaScript remain public; other local static files, including product uploads, pass authorization and receive private/no-store caching. Hosting must route product media through this application; external image URLs, independently served uploads and previously downloaded copies are outside this protection. Existing product owner/admin permission gaps still require separate remediation; marketplace eligibility does not establish product ownership.
+Authentication, recovery, verification onboarding, and safe error pages have explicit access rules. Their separate layout avoids marketplace data queries. CSS and JavaScript remain public. Other local static files, including product uploads, pass authorization and receive private/no-store caching. Hosting must route product media through the application to apply that protection. External image URLs, independently served uploads, and previously downloaded copies remain outside it. Add uses the authenticated Student as the seller. Edit, seller delete, and promotions check persisted ownership. Admin removal has a separate role policy.
 
-The connection string is read from `ConnectionStrings:CampusXDb`. For local Development, put your SQL Server login in `appsettings.Development.json` (kept out of source control) or set the `ConnectionStrings__CampusXDb` environment variable. The local SQL Server should be reachable at `localhost:1433`.
+Configure `ConnectionStrings:CampusXDb` through User Secrets for local Development or private environment settings. The equivalent environment key is `ConnectionStrings__CampusXDb`. Environment settings override User Secrets, and the launch profile supplies environment settings for keys it defines. Match the effective SQL endpoint to your own local instance or the approved shared target.
 
-In the `Development` launch profile, when `DatabaseStartup:UseSharedDatabase` is absent or `false`, the app applies pending EF Core migrations at startup and then runs the existing development seeders. You can also apply migrations manually with `dotnet ef database update`. The correction migration deliberately stops if existing accounts are present: the old schema did not store password hashes, so those accounts cannot be migrated into usable logins automatically. It also stops for invalid legacy product statuses/prices, ambiguous reports, or contact records whose seller disagrees with the product. Back up and resolve such data before applying the correction; do not drop the database to bypass the checks.
+The `CampusX` profile uses Development. When `DatabaseStartup:UseSharedDatabase` is absent or `false`, startup applies pending migrations and runs the sample product seeder. The separate details fixture seeder checks for the expected local database and an up-to-date schema. Use automatic initialization only with local SQL. The early correction migration deliberately stops for legacy accounts without stored password hashes, invalid product statuses/prices, ambiguous reports, or contact records with inconsistent sellers. Review and resolve any such data before applying it.
 
 ### Shared team database startup
 
@@ -58,8 +64,24 @@ Before launching against the shared MonsterASP.NET database, set `DatabaseStartu
 
 The equivalent environment variable is `DatabaseStartup__UseSharedDatabase=true`. Configure `ConnectionStrings:CampusXDb` separately through your existing private configuration; do not commit credentials. This flag is explicit, not inferred from the server address. With shared mode enabled, startup skips automatic migrations, `SampleProductSeeder`, and `DevelopmentTestDataSeeder`, including in Development. It does not disable normal application database access or manual EF commands. Coordinate shared schema updates separately. Non-Development startup remains unchanged; use an absent/false flag only for the existing local Development initialization behavior.
 
-When the app runs with the `CampusX` launch profile (`Development`) and shared mode is disabled, it inserts five sample products once. Every product card shows a **Delete product** button, including products created through the add form. The development-only `POST /dev/products/{id}/delete` endpoint soft-deletes by ID so the product is hidden from the catalog while its database record is retained.
+### Shared team tester access
 
-The BL classes establish the instructor-style business-logic layer, but CampusX feature controllers and views are intentionally not built yet. The Home view is only a starter placeholder, not the approved visual design. The controllers call BL classes, and the BL classes use the injected DbContext; unlike the instructor's demo, the context is not instantiated with `new` in each BL class. The SRS does not specify profile fields or the exact contact mechanism; the current profile fields and stored contact inquiry are retained from the pulled code pending team confirmation.
+Use the `CampusX Team Test` profile in Visual Studio for approved shared testers. This profile enables shared startup mode, listens on loopback HTTPS, and requires a client certificate. Keep this profile off hosted and Production deployments. It grants marketplace access only to enrolled, allowlisted Student accounts. It does not confirm university email or grant Admin privileges.
 
-The SRS does not define who creates categories or a fixed category list. The database currently requires an existing category before a product can be added, so the team must decide how categories are supplied before completing the add-product screen.
+1. Open **Manage User Secrets** for the MVC project. Configure the approved `ConnectionStrings:CampusXDb`, set `DevelopmentTesterAccess:AllowSharedDatabase` to `true`, and set `DevelopmentTesterAccess:SharedServer` and `DevelopmentTesterAccess:SharedDatabase` to the SQL Server and catalog values in the approved connection. Network SQL requires encryption and server certificate validation.
+2. Put your tester login email in `DevelopmentTesterAccess:AllowedEmails:0`. Each machine needs its own matching allowlist entry. Create a non-exportable Client Authentication certificate in the Windows Current User personal store. Store its SHA-256 fingerprint in `DevelopmentTesterAccess:ClientCertificateSha256`. Trust the ASP.NET Core HTTPS development certificate locally with `dotnet dev-certs https --trust` if needed.
+3. Once shared provisioning is approved, the maintainer adds the approved emails to the private allowlist, enables `DevelopmentTesterAccess__AllowSharedProvisioning` only for the provisioning session, and runs the command below once per tester from the repository root. The command confirms the target database, checks the schema, prompts for a password without echoing it, and refuses existing emails. Remove the provisioning flag when finished.
+
+   ```powershell
+   dotnet run --project Milestone-3/CampusX.csproj --launch-profile "CampusX Team Test" -- --provision-shared-tester
+   ```
+
+4. Select `CampusX Team Test`, open `https://localhost:7148/Account/Login`, and select the client certificate if prompted. Use the normal Login form. All writes from this session go to the configured shared database.
+
+For isolated local SQL testing, the separate `--provision-tester` command and `DevelopmentTesterAccess:Enabled` flag support the existing local tester setup. That mode also requires loopback, an explicitly local SQL transport, a private allowlist, and Identity enrollment.
+
+## Listings and admin operations
+
+The green marketplace includes responsive catalog cards, product details, name search, category and price filters, and sorting. The SRS leaves category administration and the exact seller contact mechanism open. The Add/Edit views use fixed category options, and the controller can create missing category records on save. Review [STATE.md](../STATE.md) before changing either workflow.
+
+Development listing controls appear on product details. `POST /dev/products/{id}/delete` hard-deletes an eligible Student's own listing when its relationships permit it. The separate `POST /dev/products/{id}/remove` action soft-deletes for eligible Admins. Both actions require antiforgery checks. A full Admin Dashboard and real Payment Integration are tracked as remaining work in [STATE.md](../STATE.md).

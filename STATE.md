@@ -1,68 +1,35 @@
 # CampusX project state
 
-## 1. Project Overview
+**Last updated 2026-11-20 (Africa/Cairo).** Source reviewed on `main` at `c6a8cdf`. CampusX is a student marketplace in `Milestone-3/`, using ASP.NET Core MVC, .NET 8, Razor, EF Core 8.0.4, and SQL Server. The current milestone has a working marketplace and account flows. Full acceptance and live deployment remain unverified.
 
-CampusX is a student marketplace for study-related items. The working milestone is `Milestone-3/`, an ASP.NET Core MVC application. Milestone acceptance and overall completion are not established.
+Use [AGENTS.md](AGENTS.md) for approved scope and durable rules and the [MVC README](Milestone-3/README.md) for setup. Source paths below are relative to `Milestone-3/`.
 
-Stack: .NET 8, C#, Razor HTML/CSS/JavaScript, EF Core 8.0.4, and SQL Server. Scope comes from `Milestone-0/CampusX_SRS.docx` and supporting `Milestone-0/CampusX_BRD.docx`; source priority and engineering rules are recorded in `AGENTS.md`.
+## Implementation status
 
-## 2. Current Implementation Status
-
-Snapshot from the current working tree on `main`. Reinspect before each task. Paths below are relative to `Milestone-3/` unless explicitly prefixed.
-
-Statuses: **Completed** = implemented and verified; **Partial** = incomplete implementation or limited verification; **Pending** = not implemented; **Blocked** = cannot proceed due to a dependency; **Unverified** = insufficient verification evidence.
-
-| Area | Status | Evidence and limits |
+| Area | Current implementation | Verification and limits |
 | --- | --- | --- |
-| Home Page & Product Listing | Partial | `HomeController`, `Home/Index`, `_ProductCard`, and `site.css` provide listing/count, cards, empty/error markup, featured ordering, and responsive rules. Full browser regression is still needed. |
-| Product Details | Partial | `HomeController` and `Home/Details` provide product lookup/404, seller/status display, and a neutral no-image state. Full browser regression is still needed. |
-| Search, Filter & Sort | Partial | `ProductBL`, `HomeController`, `Home/Index`, and `_Layout` provide name/category/price queries and newest/price sorting. University/condition remain placeholders. |
-| Add Product | Partial | `ProductsController`, `AddProductViewModel`, and `Products/Add` provide authenticated student ownership, antiforgery, validation, upload, and database save. A valid 2 MB PNG was verified through file save, SQL insert, and redirect; the separately reported failing upload has not been reproduced or captured. |
-| Edit / Delete Product | Partial | Edit supports loading, saving, and optional image replacement; Development deletion is a POST confirmation. Edit and deletion still need authenticated owner checks. |
-| Authentication | Partial | `AccountController`, login/signup ViewModels/views, and `Program.cs` implement cookie login/logout, password-hash verification, safe local return URLs, and registration with any normally valid email address. University-email domain restrictions and ownership verification are not implemented. |
-| Revenue | Partial | `RevenueController`, `RevenueBL`, payment-provider abstraction, models/configuration, migration, and Revenue view implement simulated purchases, owner-only promotion, configurable settings, commission calculation/disclosure, and featured ordering. Real payments and verified-sale commission collection remain deferred. |
-| Student Profile, Reports & Admin | Partial | Models/BL helpers exist, but authenticated end-to-end profile, report, moderation, and administration workflows remain incomplete. |
+| Registration, login, and logout | Identity password registration and sign-in, cookie sessions, antiforgery POSTs, logout, and local return URLs. Signup keeps login and university emails separate and starts university onboarding. `Controllers/AccountController.cs`, `Models/ApplicationUserBL.cs`, `ViewModel/SignUpViewModel.cs` | Locally exercised, including failed passwords, unverified onboarding, and logout. |
+| University email verification | Gmail SMTP sends an eight-digit, single-use code. SQL persists cooldowns, send and attempt limits, expiry, and the confirmed-address binding. Changing the address revokes eligibility. Cairo undergraduate addresses use 14 ASCII digits at `stud.cu.edu.eg`. Ain Shams, Alexandria, and Helwan are disabled and marked Coming Soon. `Models/UniversityEmailVerificationBL.cs`, `Models/StudentUniversities.cs`, `Views/Account/PendingUniversityVerification.cshtml` | The user confirmed real inbox delivery and successful marketplace entry in an earlier local session. Shared/hosted SMTP delivery remains unverified. |
+| Google sign-in and linking | Optional OAuth configuration, provider-key login, passwordless signup with university onboarding, collision handling, and explicit linking from an authenticated account with password confirmation. `Controllers/AccountController.Google.cs`, `Program.cs` | The user confirmed real local Google signup, denial before university verification, and sign-in again after logout. Existing-account linking is implemented. A hosted OAuth callback and live account-linking acceptance remain unverified. |
+| Forgot/reset password | Generic queued requests, throttling, and an Identity reset link with a 30-minute protected ticket. An account needs a confirmed login email or verified university email. Where only a different university address is verified, recovery requires proof from both inboxes. Blocked accounts are excluded. `Controllers/AccountController.Recovery.cs`, `Models/PasswordRecoveryBL.cs`, `Services/PasswordRecoveryQueue.cs` | Accounts with neither recovery factor cannot self-recover. Live recovery inbox delivery and hosted HTTPS origin remain unverified. |
+| Role and ownership authorization | Default/fallback marketplace policy reads eligibility and Student/Admin role from SQL. Product Add derives the owner from the session. Edit GET/POST, seller delete, and promotions check persisted ownership. Admin removal is role-gated. Local product uploads pass marketplace authorization. `Services/MarketplaceAccessHandler.cs`, `Controllers/ProductsController.cs`, `Controllers/ProductsDeleteController.cs`, `Models/RevenueBL.cs` | Local browser checks exercised cross-owner and Admin-only denial, antiforgery, blocked/unverified accounts, and role changes. Seller deletion is a hard delete in Development. Admin removal is a Development-only soft delete. |
+| Home, details, and discovery | Green responsive Razor UI, GET name search, category and price filters, newest/price sorting with featured priority, EGP prices, and empty/error states. Home cards contain images and handle missing/broken images. Details exposes seller contact links when fields exist. `Controllers/HomeController.cs`, `Models/ProductBL.cs`, `Views/Home/`, `Views/Shared/_ProductCard.cshtml` | Home was checked in Edge at mobile, tablet, and desktop widths during the latest tester rehearsal. University and condition filters are placeholders. Full visual acceptance and hosted media checks remain pending. |
+| Product management | Add and Edit with image upload and validation. Product details has role- and ownership-dependent controls for Development delete/removal. `Controllers/ProductsController.cs`, `Views/Products/`, `Views/Home/Details.cshtml` | Local listing creation, owner Edit access, and owner deletion exercised. My Products is a placeholder. Mark Sold has BL support and no MVC action or UI. Production seller deletion has no entry point. |
+| Student profile, communication, and reports | Seller phone/email links are available where data exists. Profile, stored inquiry, and reporting models/BL are present. `Views/Home/Details.cshtml`, `Models/ApplicationUserBL.cs`, `Models/ContactInquiryBL.cs`, `Models/ReportBL.cs` | Profile editing, stored inquiries, and report submission/review lack complete MVC workflows. Confirm the approved contact channels and data visibility. |
+| Admin Dashboard | Existing Admin role, Development listing removal, and account/report BL methods. | Pending team-owned work. No dashboard, account-management UI, or moderation queue. Named ownership is not recorded in the repository. |
+| Revenue and Payment Integration | Simulated promotion credit purchases, owner-only promotions, featured ordering, and commission calculation/disclosure. `Controllers/RevenueController.cs`, `Models/RevenueBL.cs`, `Services/SimulatedPaymentProvider.cs`, `Views/Revenue/` | Earlier local purchase/promotion rehearsal and latest local Revenue access were verified. Real Payment Integration is team-owned follow-on work and requires separate scope approval. No gateway or verified-sale commission collection. Named ownership is not recorded in the repository. |
+| MonsterASP.NET shared SQL | Explicit shared startup flag suppresses automatic migrations and both seeders. `Program.cs` | Configuration and startup guard verified offline. Hosted application deployment, current live schema, and live integration have not been verified. |
+| Development Team Tester Access | Separate Student accounts enrolled through an Identity claim and console provisioning. The Team Test profile requires private opt-in and allowlist, approved SQL target, validated network SQL TLS, and loopback HTTPS with a per-machine client certificate. `Services/DevelopmentTesterAccess.cs`, `Data/Development/DevelopmentTesterProvisioner.cs`, `Properties/launchSettings.json` | Six temporary accounts provisioned and cleaned up in isolated local SQL. Tested certificate, loopback, allowlist, role, ownership, and Production denial. Shared enrollment was not verified. Confirm existing enrollment before approved provisioning. See [Team Test setup](Milestone-3/README.md#shared-team-tester-access). |
 
-## 3. Verified Local Work
+## Open issues and deployment work
 
-- **2026-11-10:** `dotnet build CampusX.csproj --no-restore` passed with 0 warnings and 0 errors.
-- **2026-11-10:** the Revenue migration was applied to local SQLEXPRESS after a verified local database backup. An authenticated product/add-credit/promote/featured-order flow was exercised and temporary test data was removed.
-- **2026-11-10:** a valid 2 MB PNG completed the real multipart Add Product flow through filesystem write, SQL insert, and redirect. Its temporary account, product, and file were removed.
-- **2026-11-10:** light/dark preference initialization and persistence were syntax/behavior checked locally; full visual browser regression remains pending.
-- **2026-11-12:** normal-email registration and login were checked locally with a temporary Gmail-format account; the account was removed after verification. dotnet build CampusX.csproj --no-restore passed with 0 warnings and 0 errors.
+1. **Shared SQL rollout.** The last reported shared baseline was five migrations ending at `20261110065800_AddRevenueSystem`. Verify the current history before deciding whether `20261119142222_IdentityFoundation` and `20261119182114_AddUniversityEmailVerification` are still pending. The isolated SQL copy used in the tester rehearsal had all seven. The checked-in `campusx_migrations_review.sql` ends at Revenue and cannot serve as the current upgrade script. Back up and rehearse the upgrade against a suitable copy before approved deployment. Check legacy email normalization/collisions, known roles, preservation of hashes and relationships, and SQL application-lock support.
+2. **Hosting prerequisites.** Verify production HTTPS and Google callback registration, Gmail STARTTLS delivery, `PasswordRecovery:PublicOrigin`, and protected, persistent Data Protection keys. Password recovery throttling is per process. Confirm that uploads are persisted and served through authorized requests. External or separately hosted images are outside MVC authorization. Shared-test writes affect shared records, and direct SQL access is governed by SQL permissions. The legacy local details seeder has a fixed fixture password. Use the separate Identity provisioner for approved testers.
+3. **Product rules and bugs.** Add/Edit accepts prices from 1 to 1,000,000 EGP, while the BL and database allow zero. Edit uses a fixed category list, so existing categories outside that list can fail to preselect. Add/Edit can create category records from submitted names. Agree on price, taxonomy, and upload requirements. An earlier reported upload failure was not reproduced with a valid 2 MB PNG.
+4. **Incomplete features and decisions.** Complete production listing control, My Products, Mark Sold, profile editing, approved communication/reporting, and Admin workflows. Identity still uses a legacy-compatible one-character minimum for normal signup. Agree on the password policy, recovery for legacy accounts with neither approved factor, seller data visibility, report handling, and named team ownership. The green UI direction is approved. Full final UI approval and marketplace acceptance remain open.
 
-## 4. Known Issues & Blockers
+## Verification record
 
-- **Authorization gap:** Add uses the authenticated student identity and Revenue validates ownership. Edit and Development deletion still mutate by supplied product ID without owner checks.
-- **Incomplete seller workflow:** My Products is a placeholder; mark-sold has no controller/view entry point.
-- **Validation conflict:** Add/Edit ViewModel prices require 1–1,000,000, while ProductBL/database checks permit zero. The approved rule remains unresolved.
-- **UI/data limitations:** Home category-click JavaScript expects absent `data-category` attributes. Edit builds category options from hardcoded college lists, so arbitrary existing categories may not preselect.
-- **Upload report needs evidence:** the reported browser upload crash was not reproduced with a valid PNG, and no server exception was recorded. Preserve the failing image/request and Development stack trace if it recurs.
-- No automated test project or checked-in test results were found. Responsive behavior and remaining permission/mutation flows need browser regression testing.
-
-## 5. Pending Work & Next Steps
-
-1. Enforce authenticated ownership/admin authorization on edit, deletion, mark-sold, and remaining product-management workflows; complete My Products.
-2. Resolve price/category/image rules, repair filter/edit mismatches, and capture the reported upload failure if it recurs.
-3. Complete profile, approved seller contact, reporting, and admin workflows after dependent decisions are confirmed.
-4. Run browser regression for permission failures, validation, empty/error states, search/filter/sort, and mobile/tablet layouts.
-5. Add a verified purchase/payment flow before collecting sales commission; real gateway integration remains deferred.
-
-## 6. Decisions Requiring Approval
-
-See `AGENTS.md`, **Implementation and unresolved details**: account/profile fields, password rules, public seller contact data, category taxonomy, price/image requirements, report fields/origin/handling, and permitted account-management actions.
-
-The green Home direction is approved; final UI implementation approval is not established.
-
-## 7. Verification Status
-
-| Evidence | Result / limitation |
-| --- | --- |
-| Current build, 2026-11-10 | `dotnet build CampusX.csproj --no-restore` passed with 0 warnings and 0 errors. |
-| Local Revenue workflow, 2026-11-10 | Backup completed, migration applied to local SQLEXPRESS, and authenticated purchase/promote/featured-order flow was exercised. |
-| Local image upload, 2026-11-10 | Valid PNG multipart submission saved the file and product, then redirected successfully. It does not explain the separately reported failing upload. |
-| Automated/end-to-end tests | No test suite/results found. Local evidence is not full acceptance testing or proof that every environment is configured identically. |
-
-## 8. Last Updated
-
-**2026-11-12 (Africa/Cairo)** — Updated for unrestricted normal-email registration, its local sign-up/login verification, and the current implementation/verification limits.
+- **2026-11-20, this sync:** `dotnet build Milestone-3/CampusX.csproj --no-restore` passed with 0 warnings and 0 errors. Reviewed tracked sources, migration history in the repository, and documentation. No application startup or SQL connection was used for this sync.
+- **2026-11-20, earlier local sessions:** The user confirmed real Gmail-to-university inbox delivery and real Google OAuth signup/sign-in. Local Edge and isolated SQL testing exercised Team Test provisioning and marketplace protections, including the app running under Production settings. A redacted configuration check confirmed the Team Test startup guard after updating remote SQL TLS settings, without contacting MonsterASP.NET.
+- **Earlier local checks:** Simulated credits and promotion ordering, registration, and a valid 2 MB image upload were exercised. The repository contains no checked-in automated test suite. Local test evidence does not establish deployment or acceptance.
