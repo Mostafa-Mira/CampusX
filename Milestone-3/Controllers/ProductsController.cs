@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using CampusX.Options;
 using CampusX.Enums;
+using CampusX.Services;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using AutoMapper; // أضفنا مكتبة الـ AutoMapper هنا
 using System;
@@ -17,6 +19,7 @@ using System.Threading.Tasks;
 
 namespace CampusX.Controllers
 {
+    [Authorize(Policy = MarketplaceAccessPolicies.Student)]
     public class ProductsController : Controller
     {
         private const long MaxProductImageSizeBytes = 5 * 1024 * 1024;
@@ -42,7 +45,6 @@ namespace CampusX.Controllers
             _mapper = mapper;
         }
 
-        [Authorize]
         [HttpGet]
         public IActionResult Add()
         {
@@ -50,13 +52,19 @@ namespace CampusX.Controllers
             return View();
         }
 
-        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Add(AddProductViewModel model)
         {
             if (!ModelState.IsValid || !TryValidateProductImage(model.ImageFile))
                 return View(model);
+
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var studentId))
+                return Forbid();
+
+            var student = await _context.ApplicationUsers.FindAsync(studentId);
+            if (student?.Role != UserRole.Student || student.IsBlocked)
+                return Forbid();
 
             string imageUrl = string.Empty;
             if (model.ImageFile is { Length: > 0 })
@@ -76,13 +84,6 @@ namespace CampusX.Controllers
                     return View(model);
                 }
             }
-
-            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var studentId))
-                return Forbid();
-
-            var student = await _context.ApplicationUsers.FindAsync(studentId);
-            if (student?.Role != UserRole.Student || student.IsBlocked)
-                return Forbid();
 
             string categoryName = model.Category.Trim();
             var category = _context.Categories.FirstOrDefault(category => category.Name == categoryName);
@@ -113,10 +114,12 @@ namespace CampusX.Controllers
         public async Task<IActionResult> Edit(Guid id)
         {
             var product = await _context.Products.FindAsync(id);
-            if (product == null)
+            if (product is null || product.IsDeleted)
             {
                 return NotFound();
             }
+            if (!IsCurrentSeller(product))
+                return Forbid();
 
             // استخدام AutoMapper للتحويل من Product إلى AddProductViewModel
             var viewModel = _mapper.Map<AddProductViewModel>(product);
@@ -131,18 +134,18 @@ namespace CampusX.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, AddProductViewModel model)
+        public async Task<IActionResult> Edit([FromRoute] Guid id, AddProductViewModel model)
         {
+            var product = await _context.Products.FindAsync(id);
+            if (product is null || product.IsDeleted)
+                return NotFound();
+            if (!IsCurrentSeller(product))
+                return Forbid();
+
             if (!ModelState.IsValid || !TryValidateProductImage(model.ImageFile))
             {
                 ViewBag.ProductId = id;
                 return View("Edit", model);
-            }
-
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
-            {
-                return NotFound();
             }
 
             string imageUrl = product.ImageUrl;
@@ -172,23 +175,31 @@ namespace CampusX.Controllers
             {
                 category = new Category { Name = categoryName };
                 _context.Categories.Add(category);
-                await _context.SaveChangesAsync();
             }
 
-            // استخدام AutoMapper لتحديث بيانات الـ Product من الـ Model
-            _mapper.Map(model, product);
-
-            // الحفاظ على الخصائص الخاصة بالـ System والـ Database
-            product.CategoryId = category.Id;
+            product.UpdateDetails(model.Name, model.Description, model.Price, imageUrl, category.Id);
             product.College = string.IsNullOrWhiteSpace(model.College) ? "General" : model.College;
-            product.ImageUrl = imageUrl;
+            product.PhoneNumber = model.PhoneNumber;
 
-            _context.Products.Update(product);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (model.ImageFile is { Length: > 0 })
+                    TryDeleteIncompleteImage(Path.Combine(_webHostEnvironment.WebRootPath, "images", "products", Path.GetFileName(imageUrl)));
+                return NotFound();
+            }
 
+            TempData["ProductSuccess"] = "Product changes saved.";
             return RedirectToAction("Details", "Home", new { id = product.Id });
         }
         #endregion
+
+        private bool IsCurrentSeller(Product product) =>
+            Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var studentId) &&
+            product.SellerId == studentId;
 
         private bool TryValidateProductImage(IFormFile? imageFile)
         {

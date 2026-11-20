@@ -12,6 +12,14 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
         builder.HasKey(user => user.Id);
         builder.Property(user => user.Email).IsRequired().HasMaxLength(256);
         builder.HasIndex(user => user.Email).IsUnique();
-        builder.Property(user => user.PasswordHash).IsRequired();
+        builder.HasIndex(user => user.NormalizedEmail).HasDatabaseName("EmailIndex")
+            .IsUnique().HasFilter("[NormalizedEmail] IS NOT NULL");
+        // External-login users may eventually have no local password; existing hashes are preserved.
+        builder.Property(user => user.PasswordHash).IsRequired(false);
+        builder.Property(user => user.UniversityEmail).HasMaxLength(256);
+        builder.Property(user => user.UniversityEmailConfirmed).HasDefaultValue(false);
+        builder.Property(user => user.VerifiedUniversityEmail).HasMaxLength(256);
+        builder.HasIndex(user => user.VerifiedUniversityEmail).IsUnique()
+            .HasFilter("[VerifiedUniversityEmail] IS NOT NULL");
     }
 }

@@ -36,6 +36,9 @@ public static class SampleProductSeeder
             Id = SampleSellerId,
             FullName = "CampusX Demo Seller",
             Email = SampleSellerEmail,
+            UserName = SampleSellerId.ToString(),
+            NormalizedUserName = SampleSellerId.ToString().ToUpperInvariant(),
+            NormalizedEmail = SampleSellerEmail.ToUpperInvariant(),
             CollegeName = "CampusX",
             Role = UserRole.Student
         };

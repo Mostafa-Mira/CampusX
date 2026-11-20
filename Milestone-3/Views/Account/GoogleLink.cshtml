@@ -1,0 +1,44 @@
+@model CampusX.ViewModel.GoogleLinkViewModel
+@{
+    ViewData["Title"] = "Link Google account";
+}
+
+<section class="login-panel" aria-labelledby="google-link-title">
+    <div class="login-card">
+        <h1 id="google-link-title">Link Google account</h1>
+        @if ((ViewData["GoogleError"] ?? TempData["GoogleError"]) is string error)
+        {
+            <p class="login-error validation-summary-errors" role="alert">@error</p>
+        }
+        @if (TempData["AccountMessage"] is string message)
+        {
+            <p class="account-success" role="status">@message</p>
+        }
+        @if (Model.IsLinked)
+        {
+            <p>You can sign in to this CampusX account with your linked Google account.</p>
+        }
+        else if (Model.GoogleEmail is not null)
+        {
+            <p>Confirm your CampusX password to link this Google account.</p>
+            <div class="verification-address"><span>Google account</span><strong>@Model.GoogleEmail</strong></div>
+            <form asp-action="ConfirmGoogleLink" method="post">
+                <input asp-for="Challenge" type="hidden" />
+                <div class="login-field">
+                    <label asp-for="Password"></label>
+                    <input asp-for="Password" autocomplete="current-password" aria-describedby="google-link-error" required />
+                    <span asp-validation-for="Password" id="google-link-error" class="login-error" role="alert"></span>
+                </div>
+                <button class="btn-save-custom login-submit" type="submit">Confirm and link Google</button>
+            </form>
+        }
+        else
+        {
+            <p>Choose the Google account you want to use for future sign-ins.</p>
+            <form asp-action="StartGoogleLink" method="post">
+                <button class="google-button" type="submit"><span class="google-brand-icon" aria-hidden="true"></span>Continue with Google</button>
+            </form>
+        }
+        <p class="account-switch"><a asp-action="UniversityEmail">Back to University Email</a></p>
+    </div>
+</section>

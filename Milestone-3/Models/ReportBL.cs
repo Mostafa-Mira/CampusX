@@ -47,7 +47,7 @@ public class ReportBL
 
     public List<Report> GetAll(Guid adminId)
     {
-        RequireAdmin(adminId);
+        ApplicationUserBL.RequireEligibleAdmin(_context, adminId);
         return _context.Reports.AsNoTracking()
             .Include(report => report.Reporter)
             .Include(report => report.TargetProduct)
@@ -58,7 +58,7 @@ public class ReportBL
 
     public void Handle(Guid adminId, Guid reportId)
     {
-        RequireAdmin(adminId);
+        ApplicationUserBL.RequireEligibleAdmin(_context, adminId);
         var report = _context.Reports.Find(reportId)
             ?? throw new InvalidOperationException("Report not found.");
         report.Review(ReportStatus.Reviewed);
@@ -74,9 +74,4 @@ public class ReportBL
             throw new ArgumentException("A reason is required.", nameof(reason));
     }
 
-    private void RequireAdmin(Guid adminId)
-    {
-        if (_context.ApplicationUsers.Find(adminId)?.Role != UserRole.Admin)
-            throw new UnauthorizedAccessException("Admin access is required.");
-    }
 }

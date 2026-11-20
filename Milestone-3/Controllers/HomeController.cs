@@ -2,6 +2,7 @@
 using CampusX.Models;
 using CampusX.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CampusX.Controllers;
 
@@ -76,6 +77,7 @@ public class HomeController : Controller
         ProductDetailsViewModel detailsVM = new()
         {
             Id = product.Id,
+            SellerId = product.SellerId,
             Name = product.Name,
             Description = product.Description,
             Price = product.Price,
@@ -93,6 +95,7 @@ public class HomeController : Controller
         return View(detailsVM);
     }
 
+    [AllowAnonymous]
     public IActionResult Error() => View();
 }
 

@@ -1,4 +1,13 @@
+@using CampusX.Services
+@using Microsoft.AspNetCore.Authorization
 @inject CampusX.Models.CategoryBL LayoutCategoryBL
+@inject IAuthorizationService Authorization
+@{
+    var isStudent = (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Student)).Succeeded;
+    var route = ViewContext.RouteData.Values;
+    var isHome = string.Equals(route["controller"]?.ToString(), "Home", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(route["action"]?.ToString(), "Index", StringComparison.OrdinalIgnoreCase);
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,9 +22,12 @@
                 }
             } catch { }
         }());
-    </script>    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    </script>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/campus-ui.css" asp-append-version="true" />
 </head>
-<body>
+<body class="@(isHome ? "home-page" : null)">
+    <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="site-header">
         <nav class="topbar" aria-label="Main navigation">
             <a class="brand" asp-controller="Home" asp-action="Index" aria-label="CampusX home">
@@ -26,7 +38,8 @@
             <form id="search-form" class="search-form" asp-controller="Home" asp-action="Index" method="get" role="search">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
                 <label class="visually-hidden" for="site-search">Search products</label>
-                <input id="site-search" type="search" name="searchTerm" value="@Context.Request.Query["searchTerm"]" placeholder="Search for books, tech, and more..." />
+                <input id="site-search" type="search" name="searchTerm" value="@Context.Request.Query["searchTerm"]"
+                       placeholder="@(isHome ? "Search products" : "Search for books, tech, and more...")" />
                 <button type="submit">Search</button>
             </form>
 
@@ -64,14 +77,18 @@
                     <div class="sidebar-section-label">NAVIGATION</div>
                     <nav aria-label="Product navigation">
                         <ul class="sidebar-nav">
-                            <li><a class="sidebar-link" asp-controller="Home" asp-action="Index"><span class="nav-icon" aria-hidden="true">▦</span> Browse Products</a></li>
-                            <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">▤</span> My Products <small>Soon</small></span></li>
-                            <li><a class="sidebar-link" asp-controller="Products" asp-action="Add"><span class="nav-icon" aria-hidden="true">＋</span> Add Product</a></li>
-                            @if (User.Identity?.IsAuthenticated == true)
+                            <li><a class="sidebar-link @(isHome ? "is-active" : null)" aria-current="@(isHome ? "page" : null)" asp-controller="Home" asp-action="Index"><span class="nav-icon" aria-hidden="true">▦</span> Browse Products</a></li>
+                            @if (isStudent)
+                            {
+                                <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">▤</span> My Products <small>Soon</small></span></li>
+                                <li><a class="sidebar-link" asp-controller="Products" asp-action="Add"><span class="nav-icon" aria-hidden="true">＋</span> Add Product</a></li>
+                            }
+                            <li><a class="sidebar-link" asp-controller="Account" asp-action="UniversityEmail"><span class="nav-icon" aria-hidden="true">◇</span> University Email</a></li>
+                            @if (isStudent)
                             {
                                 <li><a class="sidebar-link" asp-controller="Revenue" asp-action="Index"><span class="nav-icon" aria-hidden="true">★</span> Plans &amp; Subscriptions</a></li>
+                                <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">♡</span> Favorites <small>Soon</small></span></li>
                             }
-                            <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">♡</span> Favorites <small>Soon</small></span></li>
                         </ul>
                     </nav>
 
@@ -88,7 +105,7 @@
                                 }
                             </select>
                         </div>
-                        <div class="filter-item"><span class="filter-label">University</span><span class="filter-display">Any university <span aria-hidden="true">⌄</span></span></div>
+                        <div class="filter-item"><span class="filter-label">University</span><span class="filter-display">Any university <small>Coming soon</small></span></div>
                         <div class="filter-item">
                             <span class="filter-label">Price Range (EGP)</span>
                             <div class="price-range">
@@ -96,7 +113,7 @@
                                 <input type="number" class="filter-control" name="maxPrice" form="search-form" min="0" placeholder="Max" value="@Context.Request.Query["maxPrice"]" aria-label="Maximum price" />
                             </div>
                         </div>
-                        <div class="filter-item"><span class="filter-label">Product Condition</span><span class="filter-display">Any condition <span aria-hidden="true">⌄</span></span></div>
+                        <div class="filter-item"><span class="filter-label">Product Condition</span><span class="filter-display">Any condition <small>Coming soon</small></span></div>
                         <button type="submit" form="search-form" class="filter-apply">Apply filters</button>
                         <a class="filter-clear" asp-controller="Home" asp-action="Index">Clear all</a>
                     </div>
@@ -104,7 +121,7 @@
             </div>
         </aside>
 
-        <main class="main-content" role="main">@RenderBody()</main>
+        <main class="main-content" id="main-content">@RenderBody()</main>
     </div>
 
     <footer class="site-footer"><span>© @DateTime.Now.Year CampusX</span><span>Made for campus life</span></footer>

@@ -21,9 +21,13 @@
 </section>
 
 <section class="catalog" aria-labelledby="catalog-title">
+    @if (TempData["AccountMessage"] is string accountMessage)
+    {
+        <p class="account-success" role="status">@accountMessage</p>
+    }
     @if (TempData["SampleProductMessage"] is string sampleMessage)
     {
-        <p role="status">@sampleMessage</p>
+        <p class="account-success" role="status">@sampleMessage</p>
     }
     <div class="catalog-heading">
         <div>
@@ -31,13 +35,13 @@
             <h2 id="catalog-title">@Model.Heading</h2>
             <p>@Model.Description</p>
         </div>
-        <span class="product-count">@Model.Products.Count Available Products</span>
+        <span class="product-count">@Model.Products.Count available @(Model.Products.Count == 1 ? "product" : "products")</span>
     </div>
 
     <div class="catalog-controls">
-        <!-- تم تحويل التابات إلى أزرار تفاعلية تعمل بالـ JavaScript -->
-        <div class="category-chips" aria-label="Category filters">
+        <nav class="category-chips" aria-label="Product categories">
             <a class="category-chip @(Model.CategoryId == null ? "is-active" : "")"
+               aria-current="@(Model.CategoryId == null ? "true" : null)"
                asp-controller="Home" asp-action="Index"
                asp-route-searchTerm="@Model.SearchTerm"
                asp-route-minPrice="@Model.MinPrice"
@@ -46,6 +50,7 @@
             @foreach (var category in Model.Categories)
             {
                 <a class="category-chip @(Model.CategoryId == category.Id ? "is-active" : "")"
+                   aria-current="@(Model.CategoryId == category.Id ? "true" : null)"
                    asp-controller="Home" asp-action="Index"
                    asp-route-categoryId="@category.Id"
                    asp-route-searchTerm="@Model.SearchTerm"
@@ -53,7 +58,7 @@
                    asp-route-maxPrice="@Model.MaxPrice"
                    asp-route-sortBy="@Model.SortBy">@category.Name</a>
             }
-        </div>
+        </nav>
         <label class="sort-select">
             Sort by
             <select name="sortBy" form="search-form" onchange="this.form.submit()">
@@ -66,14 +71,7 @@
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="empty-state" role="alert">
-            <h3>@Model.ErrorMessage</h3>
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-    {
-   
+        <p class="validation-summary-errors" role="alert">@Model.ErrorMessage</p>
     }
     else if (Model.Products.Count == 0)
     {
@@ -90,6 +88,7 @@
             {
                 <h3>No products match your search or filters.</h3>
                 <p>Try changing your search term or adjusting the filters.</p>
+                <a class="btn-cancel-custom empty-reset" asp-controller="Home" asp-action="Index">Clear search and filters</a>
             }
             else
             {

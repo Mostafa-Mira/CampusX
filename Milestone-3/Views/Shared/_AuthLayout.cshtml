@@ -1,0 +1,64 @@
+@{
+    var action = ViewContext.RouteData.Values["action"] as string;
+    var isLogin = action == "Login";
+    var isRegistration = action == "SignUp";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CampusX</title>
+    <script>
+        try { if (localStorage.getItem("campusx-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch { }
+    </script>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/campus-ui.css" asp-append-version="true" />
+</head>
+<body class="auth-page">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+        <nav class="topbar auth-topbar" aria-label="Account navigation">
+            <a class="brand" asp-controller="Account" asp-action="Login">
+                <span class="brand-mark" aria-hidden="true">X</span>
+                <span class="brand-name">Campus<span>X</span><small>STUDENT MARKETPLACE</small></span>
+            </a>
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+                    <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M21.5 12h-2M4.5 12h-2M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4M18.7 18.7l-1.4-1.4M6.7 6.7 5.3 5.3" /></svg>
+                    <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M20.4 14.6A8.5 8.5 0 0 1 9.4 3.6 8.5 8.5 0 1 0 20.4 14.6Z" /></svg>
+                    <span class="visually-hidden">Toggle color theme</span>
+                </button>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="logout-form">
+                        <button class="header-auth-link" type="submit">Log out</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="header-auth-link @(isLogin ? "" : "header-signup-link")" aria-current="@(isLogin ? "page" : null)" asp-controller="Account" asp-action="Login">Log in</a>
+                    <a class="header-auth-link @(isLogin ? "header-signup-link" : "")" aria-current="@(isRegistration ? "page" : null)" asp-controller="Account" asp-action="SignUp">Sign up</a>
+                }
+            </div>
+        </nav>
+    </header>
+    <main class="auth-main" id="main-content" tabindex="-1">
+        <div class="auth-shell">
+            <aside class="auth-story" aria-label="About CampusX">
+                <h2>Good finds.<br /> Great campus life.</h2>
+                <p>Give your study essentials a new chapter. Find what you need, from students like you.</p>
+                <div class="auth-campus-art" aria-hidden="true">
+                    <div class="hero-halo"></div>
+                    <div class="campus-building"><div class="building-roof"></div><div class="building-facade"><span></span><span></span><span></span><span></span><span></span></div><div class="building-steps"></div></div>
+                </div>
+                <div class="auth-story-note"><span aria-hidden="true">◇</span><strong>University email verification required</strong></div>
+            </aside>
+            @RenderBody()
+        </div>
+    </main>
+    <footer class="site-footer"><span>© @DateTime.Now.Year CampusX</span></footer>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

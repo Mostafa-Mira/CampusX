@@ -6,14 +6,20 @@ using System.Text;
 
 namespace CampusX.Models
 {
-    public class ApplicationUser
+    public class ApplicationUser : IdentityUser<Guid>
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public ApplicationUser()
+        {
+            Id = Guid.NewGuid();
+            SecurityStamp = Guid.NewGuid().ToString();
+        }
+
         public string FullName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        // Only a password hash is persisted; never store a plaintext password.
-        public string PasswordHash { get; private set; } = string.Empty;
-        public string? PhoneNumber { get; set; }
+        // Identity.Email is the personal login email. Neither it nor EmailConfirmed proves student eligibility.
+        public string? UniversityEmail { get; set; }
+        public bool UniversityEmailConfirmed { get; set; }
+        // Set only by successful code verification; binds confirmation to the exact address.
+        public string? VerifiedUniversityEmail { get; private set; }
         public string CollegeName { get; set; } = string.Empty;
         public string? ProfileImageUrl { get; set; }
         public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;

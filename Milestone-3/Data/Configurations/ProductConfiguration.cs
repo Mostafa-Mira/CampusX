@@ -15,6 +15,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(product => product.Description).IsRequired();
         builder.Property(product => product.ImageUrl).IsRequired();
         builder.Property(product => product.Price).HasPrecision(18, 2);
+        // Check that ownership and moderation state still match when a loaded listing is saved.
+        builder.Property(product => product.SellerId).IsConcurrencyToken();
+        builder.Property(product => product.IsDeleted).IsConcurrencyToken();
 
         builder.HasOne(product => product.Seller)
             .WithMany(user => user.Products)

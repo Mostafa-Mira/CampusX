@@ -79,6 +79,9 @@ public static class DevelopmentTestDataSeeder
                     IsBlocked = false
                 };
                 seller.SetPassword("DevelopmentOnly123!");
+                seller.UserName = seller.Id.ToString();
+                seller.NormalizedUserName = seller.UserName.ToUpperInvariant();
+                seller.NormalizedEmail = seller.Email!.ToUpperInvariant();
                 context.ApplicationUsers.Add(seller);
             }
             else if (seller.Role != UserRole.Student || seller.IsBlocked)

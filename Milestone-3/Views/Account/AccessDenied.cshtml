@@ -1,0 +1,22 @@
+@using CampusX.Services
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService Authorization
+@{
+    ViewData["Title"] = "Access denied";
+    var canBrowse = (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Marketplace)).Succeeded;
+}
+<section class="login-panel" aria-labelledby="denied-title">
+    <div class="login-card">
+        <span class="state-emblem" aria-hidden="true">!</span>
+        <h1 id="denied-title">Access denied</h1>
+        <p>You don’t have permission to view this page or perform this action.</p>
+        @if (canBrowse)
+        {
+            <a class="btn-save-custom auth-return-link" asp-controller="Home" asp-action="Index">Browse products</a>
+        }
+        else if (User.Identity?.IsAuthenticated != true)
+        {
+            <a class="btn-save-custom auth-return-link" asp-action="Login" asp-controller="Account">Back to login</a>
+        }
+    </div>
+</section>

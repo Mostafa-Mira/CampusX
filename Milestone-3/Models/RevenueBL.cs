@@ -26,13 +26,13 @@ public class RevenueBL
 
     public int GetAvailableCredits(Guid buyerId)
     {
-        RequireActiveStudent(buyerId);
+        ApplicationUserBL.RequireEligibleRole(_context, buyerId, UserRole.Student);
         return GetAvailableCreditsCore(buyerId);
     }
 
     public PromotionCreditPurchase PurchaseCredits(Guid buyerId, PromotionPackage package)
     {
-        RequireActiveStudent(buyerId);
+        ApplicationUserBL.RequireEligibleRole(_context, buyerId, UserRole.Student);
         var (credits, amount) = GetPackage(package);
         var payment = _paymentProvider.Charge(buyerId, amount, $"CampusX {package} promotion package");
         if (!payment.IsApproved)
@@ -57,12 +57,14 @@ public class RevenueBL
             throw new InvalidOperationException("Promotion duration must be configured as a positive number of days.");
 
         using var transaction = _context.Database.BeginTransaction(IsolationLevel.Serializable);
-        RequireActiveStudent(ownerId);
+        ApplicationUserBL.RequireEligibleRole(_context, ownerId, UserRole.Student);
 
-        var product = _context.Products.SingleOrDefault(product => product.Id == productId)
-            ?? throw new InvalidOperationException("Product not found.");
-        if (product.SellerId != ownerId || product.IsDeleted || product.Status != ProductStatus.Available)
-            throw new UnauthorizedAccessException("Only the owner can promote an available product.");
+        var product = _context.Products.SingleOrDefault(product => product.Id == productId && !product.IsDeleted)
+            ?? throw new KeyNotFoundException("Product not found.");
+        if (product.SellerId != ownerId)
+            throw new UnauthorizedAccessException("Only the owner can promote this product.");
+        if (product.Status != ProductStatus.Available)
+            throw new InvalidOperationException("Only available products can be promoted.");
 
         var now = DateTime.UtcNow;
         if (_context.ProductPromotions.Any(promotion => promotion.ProductId == productId && promotion.ExpiresAt > now))
@@ -85,7 +87,7 @@ public class RevenueBL
 
     public List<RevenueProductSummary> GetOwnedAvailableProducts(Guid ownerId)
     {
-        RequireActiveStudent(ownerId);
+        ApplicationUserBL.RequireEligibleRole(_context, ownerId, UserRole.Student);
         var now = DateTime.UtcNow;
         return _context.Products.AsNoTracking()
             .Where(product => product.SellerId == ownerId && !product.IsDeleted && product.Status == ProductStatus.Available)
@@ -129,10 +131,4 @@ public class RevenueBL
         _ => throw new ArgumentOutOfRangeException(nameof(package))
     };
 
-    private void RequireActiveStudent(Guid userId)
-    {
-        var user = _context.ApplicationUsers.Find(userId);
-        if (user?.Role != UserRole.Student || user.IsBlocked)
-            throw new UnauthorizedAccessException("An active student account is required.");
-    }
 }

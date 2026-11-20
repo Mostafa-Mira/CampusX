@@ -1,8 +1,20 @@
 @model CampusX.ViewModels.ProductDetailsViewModel
+@using System.Security.Claims
+@using CampusX.Services
+@using Microsoft.AspNetCore.Authorization
 @inject IWebHostEnvironment Environment
+@inject IAuthorizationService Authorization
 
 @{
     ViewData["Title"] = Model.Name;
+    var isDevelopment = Environment.IsDevelopment();
+    var canEdit = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) &&
+        userId == Model.SellerId &&
+        (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Student)).Succeeded;
+    var canModerate = isDevelopment &&
+        (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Admin)).Succeeded;
+    var canRemove = canModerate || (isDevelopment && canEdit);
+    var removalLabel = canModerate ? "Remove listing" : "Delete product";
 }
 
 <section class="product-details" aria-labelledby="product-title">
@@ -27,6 +39,14 @@
         </div>
 
         <div class="product-details-content">
+            @if (TempData["ProductSuccess"] is string success)
+            {
+                <p class="account-success" role="status">@success</p>
+            }
+            @if (TempData["ProductError"] is string error)
+            {
+                <p class="validation-summary-errors" role="alert">@error</p>
+            }
             <div class="details-label-row"><span class="product-category">@Model.CategoryName</span><span class="product-status">@Model.Status</span></div>
             <h1 id="product-title">@Model.Name</h1>
             <p class="product-id">Listing ID: @Model.Id</p>
@@ -79,24 +99,31 @@
                 </dl>
             </div>
 
-            <div class="product-details-actions">
-                <a asp-controller="Products" asp-action="Edit" asp-route-id="@Model.Id" class="product-detail-action product-detail-edit">Edit Product</a>
-                @if (Environment.IsDevelopment())
-                {
-                    <button type="button" class="product-detail-action product-detail-delete" onclick="document.getElementById('delete-product-@Model.Id').showModal()">Delete product</button>
-                }
-            </div>
-
-            @if (Environment.IsDevelopment())
+            @if (canEdit || canRemove)
             {
-                <dialog class="sample-delete-dialog" id="delete-product-@Model.Id" aria-labelledby="delete-title-@Model.Id" aria-describedby="delete-message-@Model.Id" dir="ltr">
+                <div class="product-details-actions">
+                    @if (canEdit)
+                    {
+                        <a asp-controller="Products" asp-action="Edit" asp-route-id="@Model.Id" class="product-detail-action product-detail-edit">Edit Product</a>
+                    }
+                    @if (canRemove)
+                    {
+                        <button type="button" class="product-detail-action product-detail-delete" onclick="document.getElementById('delete-product-@Model.Id').showModal()">@removalLabel</button>
+                    }
+                </div>
+            }
+
+            @if (canRemove)
+            {
+                <dialog class="sample-delete-dialog" id="delete-product-@Model.Id" aria-labelledby="delete-title-@Model.Id" aria-describedby="delete-name-@Model.Id delete-message-@Model.Id" dir="ltr">
                     <div class="sample-delete-dialog-body">
                         <span class="sample-delete-icon" aria-hidden="true">!</span>
-                        <h2 id="delete-title-@Model.Id">Are you sure?</h2>
-                        <p id="delete-message-@Model.Id">This product cannot be restored after deletion.</p>
-                        <form asp-controller="ProductsDelete" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="sample-delete-actions">
-                            <button type="button" class="sample-delete-cancel" onclick="document.getElementById('delete-product-@Model.Id').close()">Cancel</button>
-                            <button type="submit" class="sample-delete-confirm">Yes, delete product</button>
+                        <h2 id="delete-title-@Model.Id">@removalLabel?</h2>
+                        <p class="sample-delete-product-name" id="delete-name-@Model.Id">@Model.Name</p>
+                        <p id="delete-message-@Model.Id">@(canModerate ? "This listing will be hidden from the marketplace." : "This product cannot be restored after deletion.")</p>
+                        <form asp-controller="ProductsDelete" asp-action="@(canModerate ? "Remove" : "Delete")" asp-route-id="@Model.Id" method="post" class="sample-delete-actions">
+                            <button type="button" class="sample-delete-cancel" autofocus onclick="document.getElementById('delete-product-@Model.Id').close()">Cancel</button>
+                            <button type="submit" class="sample-delete-confirm">@removalLabel</button>
                         </form>
                     </div>
                 </dialog>

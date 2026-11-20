@@ -1,0 +1,33 @@
+@model CampusX.ViewModel.GoogleRegistrationViewModel
+@{
+    ViewData["Title"] = "Complete registration";
+}
+
+<section class="login-panel" aria-labelledby="google-registration-title">
+    <div class="login-card registration-card">
+        <h1 id="google-registration-title">Complete your registration</h1>
+        <p>Verify your Cairo University student email after creating your account.</p>
+        <div class="verification-address"><span>Login email from Google</span><strong>@Model.GoogleEmail</strong></div>
+        <form asp-action="GoogleRegistration" method="post">
+            <input asp-for="Challenge" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="login-error validation-summary" role="alert"></div>
+            <div class="login-field">
+                <label asp-for="FullName"></label>
+                <input asp-for="FullName" autocomplete="name" maxlength="100" aria-describedby="google-name-error" required />
+                <span asp-validation-for="FullName" id="google-name-error" class="login-error" role="alert"></span>
+            </div>
+            <fieldset class="university-fields">
+                <legend>Cairo University</legend>
+                <div class="login-field">
+                    <label asp-for="UniversityEmail"></label>
+                    <input asp-for="UniversityEmail" autocomplete="section-university email" autocapitalize="none" spellcheck="false" aria-describedby="google-university-help google-university-error" required />
+                    <small id="google-university-help" class="field-help">Enter your 14-digit student code followed by @@stud.cu.edu.eg.</small>
+                    <span asp-validation-for="UniversityEmail" id="google-university-error" class="login-error" role="alert"></span>
+                </div>
+            </fieldset>
+            <p class="field-help">Ain Shams, Alexandria, and Helwan are coming soon.</p>
+            <button class="btn-save-custom login-submit" type="submit">Create account</button>
+        </form>
+        <p class="account-switch"><a asp-action="Login">Back to login</a></p>
+    </div>
+</section>

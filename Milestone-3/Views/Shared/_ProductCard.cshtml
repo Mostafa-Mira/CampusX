@@ -1,19 +1,20 @@
 @model CampusX.ViewModels.ProductCardViewModel
+@{
+    var hasImage = !string.IsNullOrWhiteSpace(Model.ImageUrl);
+}
 
 <article class="product-card">
     <a class="product-card-main-link" asp-controller="Home" asp-action="Details" asp-route-id="@Model.Id" aria-label="View details for @Model.Name">
         <div class="product-media">
-            @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+            @if (hasImage)
             {
-                <img src="@Model.ImageUrl" alt="@Model.Name" loading="lazy" />
+                <img src="@Model.ImageUrl" alt="@Model.Name" loading="lazy" decoding="async"
+                     onerror="this.hidden=true; this.nextElementSibling.hidden=false;" />
             }
-            else
-            {
-                <div class="product-image-placeholder" role="img" aria-label="No image available for @Model.Name">
-                    <span aria-hidden="true">▦</span>
-                    <span>No image available</span>
-                </div>
-            }
+            <div class="product-image-placeholder" hidden="@hasImage">
+                <span aria-hidden="true">▦</span>
+                <span>No image available</span>
+            </div>
         </div>
         <div class="product-body">
             <div class="product-card-badges">
@@ -32,9 +33,13 @@
             <time datetime="@Model.CreatedAt.ToString("O")">@Model.CreatedAt.ToString("dd MMM yyyy")</time>
         </div>
     </a>
-    @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber))
-    {
-        <a class="product-phone-link" href="tel:@Model.PhoneNumber" title="Call seller">📞 @Model.PhoneNumber</a>
-    }
-    <a class="product-details-link" asp-controller="Home" asp-action="Details" asp-route-id="@Model.Id">View details <span aria-hidden="true">→</span></a>
+    <div class="product-card-actions">
+        @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber))
+        {
+            <a class="product-phone-link" href="tel:@Model.PhoneNumber" aria-label="Call seller at @Model.PhoneNumber">
+                <span aria-hidden="true">☎︎</span> @Model.PhoneNumber
+            </a>
+        }
+        <a class="product-details-link" asp-controller="Home" asp-action="Details" asp-route-id="@Model.Id">View details <span aria-hidden="true">→</span></a>
+    </div>
 </article>

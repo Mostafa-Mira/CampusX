@@ -1,0 +1,88 @@
+@model CampusX.ViewModel.UniversityVerificationViewModel
+@inject Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider AuthenticationSchemes
+@{
+    ViewData["Title"] = Model.IsConfirmed ? "University email verified" : "Pending University Verification";
+}
+<section class="login-panel" aria-labelledby="verification-title">
+    <div class="login-card verification-card">
+        <span class="state-emblem" aria-hidden="true">◇</span>
+        <h1 id="verification-title">@(Model.IsConfirmed ? "University email verified" : "Pending University Verification")</h1>
+        @if (!Model.IsConfirmed)
+        {
+            <p>Verify your university email to unlock the marketplace.</p>
+        }
+        @if (TempData["AccountMessage"] is string message)
+        {
+            <p class="account-success" role="status">@message</p>
+        }
+        <div asp-validation-summary="All" class="validation-summary login-error" role="alert"></div>
+        <div class="verification-address"><span>University email</span><strong>@Model.MaskedEmail</strong></div>
+        @if (Model.IsConfirmed)
+        {
+            <p class="account-success" role="status">Your university email is verified.</p>
+            <a class="btn-save-custom verification-marketplace" asp-controller="Home" asp-action="Index">Go to marketplace <span aria-hidden="true">→</span></a>
+        }
+        else
+        {
+            @if (!string.IsNullOrWhiteSpace(Model.Notice))
+            {
+                <p class="verification-notice" role="status">@Model.Notice</p>
+            }
+            @if (Model.IsEligible)
+            {
+                <form asp-action="SendUniversityVerificationCode" method="post" class="verification-send">
+                    <button class="btn-save-custom login-submit" type="submit" disabled="@(Model.ResendAfterSeconds > 0)"
+                            data-cooldown="@Model.ResendAfterSeconds"
+                            data-ready-label="@(Model.ExpiresAt.HasValue ? "Resend Code" : "Send Verification Code")">
+                        @(Model.ResendAfterSeconds > 0 ? $"Request code in {Model.ResendAfterSeconds}s" : Model.ExpiresAt.HasValue ? "Resend Code" : "Send Verification Code")
+                    </button>
+                </form>
+                <form asp-action="VerifyUniversityEmail" method="post" class="verification-code-form">
+                    <div class="login-field">
+                        <label asp-for="Code">8-digit verification code</label>
+                        <input asp-for="Code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                               pattern="[0-9]{8}" maxlength="8" minlength="8" required
+                               aria-describedby="code-help code-expiry" class="verification-code" />
+                        <small class="field-help" id="code-help">Enter the code from your university inbox. Never share it.</small>
+                    </div>
+                    <p class="field-help" id="code-expiry"
+                       data-expires="@(Model.ExpiresAt.HasValue ? DateTime.SpecifyKind(Model.ExpiresAt.Value, DateTimeKind.Utc).ToString("O") : "")">
+                        @(Model.HasActiveCode ? "Your code expires 10 minutes after it was requested." : "Request a new code to continue.")
+                    </p>
+                    <button class="btn-save-custom login-submit" type="submit" id="verify-code-button" disabled="@(!Model.HasActiveCode)">Verify University Email</button>
+                </form>
+            }
+        }
+        <details class="verification-change">
+            <summary>@(Model.IsConfirmed ? "Change university email" : "Use a different university email")</summary>
+            <p class="field-help">Changing this address removes verification and marketplace access until you verify the new email.</p>
+            <form asp-action="ChangeUniversityEmail" method="post">
+                <div class="login-field">
+                    <label for="new-university-email">New Cairo University student email</label>
+                    <input id="new-university-email" type="email" name="UniversityEmail" maxlength="256"
+                           autocomplete="section-university email" autocapitalize="none" spellcheck="false" required
+                           placeholder="14-digit student code@@stud.cu.edu.eg" aria-describedby="new-email-help" />
+                    <small class="field-help" id="new-email-help">14 digits followed by @@stud.cu.edu.eg. Your login email and password stay unchanged.</small>
+                </div>
+                <button type="submit" class="btn-cancel-custom">Update University Email</button>
+            </form>
+        </details>
+        @if (await AuthenticationSchemes.GetSchemeAsync("Google") is not null)
+        {
+            <p class="account-switch"><a asp-action="GoogleLink">Link Google account</a></p>
+        }
+        <div class="verification-universities">
+            <span class="section-eyebrow">SUPPORTED UNIVERSITIES</span>
+            <ul>
+                <li>Cairo University <span>Undergraduates</span></li>
+                @foreach (var university in CampusX.Models.StudentUniversities.Names.Where(name => name != CampusX.Models.StudentUniversities.Cairo))
+                {
+                    <li class="is-disabled">@university <span>Coming Soon</span></li>
+                }
+            </ul>
+        </div>
+    </div>
+</section>
+@section Scripts {
+    <script src="~/js/university-verification.js" asp-append-version="true"></script>
+}

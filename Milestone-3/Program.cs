@@ -1,11 +1,16 @@
 using CampusX.Data.DbContexts;
 using CampusX.Data.Development;
 using CampusX.Data.Seed;
+using CampusX.Enums;
 using CampusX.Models;
 using CampusX.Options;
 using CampusX.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,10 +19,56 @@ builder.Services.AddControllersWithViews();
 // تسجيل الـ AutoMapper هنا
 builder.Services.AddAutoMapper(typeof(Program));
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+        options.Stores.MaxLengthForKeys = 128;
+        // Preserve existing password acceptance until a password policy is approved separately.
+        options.Password.RequiredLength = 1;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        // Marketplace eligibility uses separate university verification, never personal email confirmation.
+    })
+    .AddEntityFrameworkStores<CampusXDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders()
+    .AddClaimsPrincipalFactory<CampusXUserClaimsPrincipalFactory>();
+
+var authentication = builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
+        options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
+        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+    });
+authentication.AddIdentityCookies();
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    authentication.AddGoogle(options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        options.CallbackPath = "/signin-google";
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+        options.UsePkce = true;
+        options.ClaimActions.MapJsonKey("google:email_verified", "email_verified", "boolean");
+        options.Events.OnRemoteFailure = async context =>
+        {
+            context.HandleResponse();
+            await context.HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+            var session = await context.HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+            var action = session.Succeeded ? "GoogleLink" : "Login";
+            context.Response.Redirect($"{context.Request.PathBase}/Account/{action}?googleError=true");
+        };
+    });
+}
+builder.Services.ConfigureApplicationCookie(options =>
     {
         options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
         options.Cookie.Name = "CampusX.Auth";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
@@ -25,6 +76,22 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
     });
+
+builder.Services.AddAuthorization(options =>
+{
+    var marketplace = MarketplaceAccessHandler.CreateMarketplacePolicy();
+    // Cover both plain [Authorize] endpoints and routes with no explicit authorization attribute.
+    options.DefaultPolicy = marketplace;
+    options.FallbackPolicy = marketplace;
+    options.AddPolicy(MarketplaceAccessPolicies.Marketplace, marketplace);
+    options.AddPolicy(MarketplaceAccessPolicies.Student, MarketplaceAccessHandler.CreateMarketplacePolicy(UserRole.Student));
+    options.AddPolicy(MarketplaceAccessPolicies.Admin, MarketplaceAccessHandler.CreateMarketplacePolicy(UserRole.Admin));
+    options.AddPolicy(MarketplaceAccessPolicies.AuthenticatedOnly, policy =>
+        policy.AddAuthenticationSchemes(IdentityConstants.ApplicationScheme).RequireAuthenticatedUser());
+});
+builder.Services.AddScoped<MarketplaceAccessHandler>();
+builder.Services.AddScoped<IAuthorizationHandler>(services => services.GetRequiredService<MarketplaceAccessHandler>());
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, MarketplaceAuthorizationResultHandler>();
 
 builder.Services.AddDbContext<CampusXDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CampusXDb")));
@@ -34,6 +101,10 @@ builder.Services.AddScoped<CategoryBL>();
 builder.Services.AddScoped<ProductBL>();
 builder.Services.AddScoped<ReportBL>();
 builder.Services.AddScoped<ContactInquiryBL>();
+builder.Services.Configure<EmailSmtpOptions>(builder.Configuration.GetSection(EmailSmtpOptions.SectionName));
+builder.Services.AddScoped<IUniversityEmailSender, GmailUniversityEmailSender>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<UniversityEmailVerificationBL>();
 
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
 builder.Services.AddScoped<IPaymentProvider, SimulatedPaymentProvider>();
@@ -76,12 +147,27 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Only UI assets are public. Each provider is rooted inside its own directory so traversal cannot
+// expose product uploads through an apparently public /css or /js URL.
+foreach (var directory in new[] { "css", "js" })
+{
+    var provider = new PhysicalFileProvider(Path.Combine(app.Environment.WebRootPath, directory));
+    app.Lifetime.ApplicationStopped.Register(provider.Dispose);
+    app.UseStaticFiles(new StaticFileOptions { RequestPath = "/" + directory, FileProvider = provider });
+}
 
 app.UseRouting();
 
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.CacheControl = "private, no-store";
+    await next();
+});
 app.UseAuthorization();
+// Remaining files, including /images/products, pass the same eligibility policy as MVC routes.
+app.UseStaticFiles();
 
 app.MapControllerRoute(
     name: "default",

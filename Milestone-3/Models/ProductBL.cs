@@ -68,7 +68,7 @@ public class ProductBL
 
     public Product Add(Guid studentId, Product product)
     {
-        RequireActiveStudent(studentId);
+        ApplicationUserBL.RequireEligibleRole(_context, studentId, UserRole.Student);
         ValidateDetails(product.Name, product.Price, product.CategoryId);
         product.SellerId = studentId;
         product.Status = ProductStatus.Available;
@@ -96,52 +96,33 @@ public class ProductBL
 
     public void Delete(Guid studentId, Guid productId)
     {
-        var product = _context.Products.Find(productId);
-
-        if (product != null)
-        {
-            _context.Products.Remove(product);
-            _context.SaveChanges();
-        }
-        else
-            return;
-
-}
-
-    public void DeleteById(Guid pid)
-    {
-        var product = _context.Products.Find(pid);
+        var product = GetOwnedProduct(studentId, productId);
         _context.Products.Remove(product);
         _context.SaveChanges();
-
-
     }
 
     public void RemoveByAdmin(Guid adminId, Guid productId)
     {
-        if (_context.ApplicationUsers.Find(adminId)?.Role != UserRole.Admin)
-            throw new UnauthorizedAccessException("Admin access is required.");
-        var product = _context.Products.Find(productId)
-            ?? throw new InvalidOperationException("Product not found.");
+        ApplicationUserBL.RequireEligibleAdmin(_context, adminId);
+        var product = GetExistingProduct(productId);
         product.IsDeleted = true;
         _context.SaveChanges();
     }
 
     private Product GetOwnedProduct(Guid studentId, Guid productId)
     {
-        RequireActiveStudent(studentId);
-        var product = _context.Products.Find(productId)
-            ?? throw new InvalidOperationException("Product not found.");
-        if (product.SellerId != studentId || product.IsDeleted)
+        ApplicationUserBL.RequireEligibleRole(_context, studentId, UserRole.Student);
+        var product = GetExistingProduct(productId);
+        if (product.SellerId != studentId)
             throw new UnauthorizedAccessException("Only the seller can manage this product.");
         return product;
     }
 
-    private void RequireActiveStudent(Guid studentId)
+    private Product GetExistingProduct(Guid productId)
     {
-        var student = _context.ApplicationUsers.Find(studentId);
-        if (student?.Role != UserRole.Student || student.IsBlocked)
-            throw new UnauthorizedAccessException("An active student account is required.");
+        var product = _context.Products.Find(productId);
+        return product is not null && !product.IsDeleted ? product
+            : throw new InvalidOperationException("Product not found.");
     }
 
     private void ValidateDetails(string name, decimal price, Guid categoryId)

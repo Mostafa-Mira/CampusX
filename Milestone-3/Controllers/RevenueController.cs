@@ -2,6 +2,7 @@ using System.Security.Claims;
 using CampusX.Enums;
 using CampusX.Models;
 using CampusX.Options;
+using CampusX.Services;
 using CampusX.ViewModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace CampusX.Controllers;
 
-[Authorize]
+[Authorize(Policy = MarketplaceAccessPolicies.Student)]
 public class RevenueController : Controller
 {
     private readonly RevenueBL _revenueBL;
@@ -95,6 +96,10 @@ public class RevenueController : Controller
         {
             var promotion = _revenueBL.ActivatePromotion(studentId, productId);
             TempData["RevenueSuccess"] = $"Promotion activated until {promotion.ExpiresAt.ToLocalTime():dd MMM yyyy}.";
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
         }
         catch (UnauthorizedAccessException)
         {

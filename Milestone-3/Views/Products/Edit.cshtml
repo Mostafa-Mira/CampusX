@@ -1,35 +1,29 @@
 @model CampusX.ViewModel.AddProductViewModel
-
 @{
     ViewData["Title"] = "Edit Product";
 }
-
-<div class="add-product-card">
-    <h2 style="font-size: 26px; font-weight: 700; color: #111; margin-bottom: 8px;">Edit Product</h2>
-    <p style="color: #656d76; font-size: 14px; margin-bottom: 28px;">Update your product details below.</p>
+<section class="add-product-card" aria-labelledby="product-form-title">
+    <span class="section-eyebrow">YOUR CAMPUS LISTING</span>
+    <h1 id="product-form-title">Edit Product</h1>
+    <p class="form-intro">Give your listing a refresh. Update its details below.</p>
 
     <form asp-action="Edit" asp-route-id="@ViewBag.ProductId" method="post" enctype="multipart/form-data">
-        <div asp-validation-summary="ModelOnly" style="color: #cf222e; margin-bottom: 20px; font-size: 13px;"></div>
-
-        <!-- السطر الأول: الاسم والسعر -->
-        <div style="display: flex; gap: 20px; margin-bottom: 22px;">
-            <div style="flex: 2;">
-                <label asp-for="Name" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
+        <div asp-validation-summary="ModelOnly" class="validation-summary login-error" role="alert"></div>
+        <div class="form-row">
+            <div class="form-field">
+                <label asp-for="Name"></label>
                 <input asp-for="Name" class="form-control-custom" placeholder="e.g. Data Structures Textbook" />
-                <span asp-validation-for="Name" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+                <span asp-validation-for="Name"></span>
             </div>
-
-            <div style="flex: 1;">
-                <label asp-for="Price" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
+            <div class="form-field">
+                <label asp-for="Price">Price (EGP)</label>
                 <input asp-for="Price" class="form-control-custom" placeholder="0.00 EGP" />
-                <span asp-validation-for="Price" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+                <span asp-validation-for="Price"></span>
             </div>
         </div>
-
-        <!-- السطر الثاني: الكلية والكاتيجوري -->
-        <div style="display: flex; gap: 20px; margin-bottom: 22px;">
-            <div style="flex: 1;">
-                <label asp-for="College" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;">College (Optional)</label>
+        <div class="form-row">
+            <div class="form-field">
+                <label asp-for="College">College (Optional)</label>
                 <select asp-for="College" id="collegeSelect" class="form-control-custom">
                     <option value="">Select College (Optional)...</option>
                     <option value="Medicine">Medicine (طب بشري)</option>
@@ -38,60 +32,41 @@
                     <option value="Engineering">Engineering (هندسة)</option>
                     <option value="Science">Science (علوم)</option>
                 </select>
-                <span asp-validation-for="College" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+                <span asp-validation-for="College"></span>
             </div>
-
-            <div style="flex: 1;">
-                <label asp-for="Category" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;">Category</label>
+            <div class="form-field">
+                <label asp-for="Category"></label>
                 <select asp-for="Category" id="categorySelect" class="form-control-custom">
                     <option value="">-- Select Category --</option>
                 </select>
-                <span asp-validation-for="Category" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+                <span asp-validation-for="Category"></span>
             </div>
         </div>
-
-        <!-- السطر الثالث: رقم الهاتف -->
-        <div style="margin-bottom: 22px;">
-            <label asp-for="PhoneNumber" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;">Contact Phone Number</label>
+        <div class="form-field">
+            <label asp-for="PhoneNumber">Contact Phone Number</label>
             <input asp-for="PhoneNumber" class="form-control-custom" placeholder="e.g. 01012345678 (010, 011, 012, 015)" />
-            <span asp-validation-for="PhoneNumber" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+            <span asp-validation-for="PhoneNumber"></span>
         </div>
-
-        <!-- السطر الرابع: صورة المنتج -->
-        <div style="margin-bottom: 22px;">
-            <label asp-for="ImageFile" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
-            <div style="display: flex; align-items: center; border: 1px solid #d0d7de; border-radius: 6px; background: #fff; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);">
-                <label for="customFile" style="background: #f6f8fa; color: #24292f; padding: 10px 16px; font-weight: 500; font-size: 14px; border-right: 1px solid #d0d7de; cursor: pointer; margin-bottom: 0;">
-                    Browse...
-                </label>
-                <input asp-for="ImageFile" id="customFile" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" style="display: none;" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0] ? this.files[0].name : 'No file chosen';" />
-                <span id="fileNameDisplay" style="padding: 0 14px; color: #57606a; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    No file chosen
-                </span>
-            </div>
-            <span asp-validation-for="ImageFile" style="color: #cf222e; font-size: 12px; margin-top: 6px; display: block;"></span>
+        <div class="form-field">
+            <label asp-for="ImageFile"></label>
+            <input asp-for="ImageFile" id="customFile" class="form-control-custom" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" aria-describedby="image-help" />
+            <small class="field-help" id="image-help">JPG, PNG, WEBP or GIF, up to 5 MB. Leave blank to keep the existing image.</small>
+            <span asp-validation-for="ImageFile"></span>
         </div>
-
-        <!-- السطر الأخير: الوصف -->
-        <div style="margin-bottom: 32px;">
-            <label asp-for="Description" style="display: block; font-weight: 600; margin-bottom: 8px; color: #24292f; font-size: 14px;"></label>
-            <textarea asp-for="Description" id="productDescription" class="form-control-custom" rows="4" maxlength="300" placeholder="Describe the condition, edition, or details (max 300 characters)..." style="font-size: 14px; line-height: 1.5; padding: 10px;"></textarea>
-            <div style="display: flex; justify-content: space-between; margin-top: 6px;">
-                <span asp-validation-for="Description" style="color: #cf222e; font-size: 12px;"></span>
-                <small id="charCount" style="color: #656d76; font-size: 12px; margin-left: auto;">0 / 300 characters</small>
+        <div class="form-field">
+            <label asp-for="Description"></label>
+            <textarea asp-for="Description" id="productDescription" class="form-control-custom" rows="4" maxlength="300" placeholder="Describe the condition, edition, or details (max 300 characters)..."></textarea>
+            <div class="description-meta">
+                <span asp-validation-for="Description"></span>
+                <small id="charCount">0 / 300 characters</small>
             </div>
         </div>
-
-        <!-- ========================================================== -->
-        <!-- Mostafa: Edit Product Buttons Area (Independent)           -->
-        <!-- ========================================================== -->
-        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #eaecef; padding-top: 24px;">
+        <div class="form-actions">
             <a asp-controller="Home" asp-action="Details" asp-route-id="@ViewBag.ProductId" class="btn-cancel-custom">Cancel</a>
             <button type="submit" class="btn-save-custom">Save Changes</button>
         </div>
-        <!-- ========================================================== -->
     </form>
-</div>
+</section>
 
 @section Scripts {
     <script>

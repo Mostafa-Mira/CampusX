@@ -1,0 +1,13 @@
+@model string
+@inject Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider AuthenticationSchemes
+
+@if (User.Identity?.IsAuthenticated != true && await AuthenticationSchemes.GetSchemeAsync("Google") is not null)
+{
+    <div class="auth-alternative">
+        <span class="auth-divider">or</span>
+        <form asp-controller="Account" asp-action="ContinueWithGoogle" method="post">
+            <input type="hidden" name="returnUrl" value="@Model" />
+            <button class="google-button" type="submit"><span class="google-brand-icon" aria-hidden="true"></span>Continue with Google</button>
+        </form>
+    </div>
+}

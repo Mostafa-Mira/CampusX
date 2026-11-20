@@ -1,9 +1,11 @@
 using CampusX.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampusX.Data.DbContexts;
 
-public class CampusXDbContext : DbContext
+// Keep the existing UserRole enum as the single role source; no parallel role membership store.
+public class CampusXDbContext : IdentityUserContext<ApplicationUser, Guid>
 {
     public CampusXDbContext(DbContextOptions<CampusXDbContext> options) : base(options) { }
 
@@ -14,6 +16,8 @@ public class CampusXDbContext : DbContext
     public DbSet<ContactInquiry> ContactInquiries => Set<ContactInquiry>();
     public DbSet<PromotionCreditPurchase> PromotionCreditPurchases => Set<PromotionCreditPurchase>();
     public DbSet<ProductPromotion> ProductPromotions => Set<ProductPromotion>();
+    public DbSet<UniversityEmailVerification> UniversityEmailVerifications => Set<UniversityEmailVerification>();
+    public DbSet<UniversityVerificationAttempt> UniversityVerificationAttempts => Set<UniversityVerificationAttempt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
