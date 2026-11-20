@@ -1,0 +1,51 @@
+@model CampusX.ViewModel.AccountSettingsViewModel
+@{
+    ViewData["Title"] = "Account settings";
+}
+
+<section class="login-panel" aria-labelledby="account-settings-title">
+    <div class="login-card account-settings-card">
+        <h1 id="account-settings-title">Account settings</h1>
+        <p>Manage how you sign in and verify your student account.</p>
+
+        @if (TempData["AccountMessage"] is string message)
+        {
+            <p class="account-success" role="status">@message</p>
+        }
+
+        <div class="verification-address">
+            <span>University email</span>
+            <a asp-action="UniversityEmail">Manage university email</a>
+        </div>
+
+        @if (Model.GoogleLinked || Model.GoogleAvailable)
+        {
+            <div class="verification-address">
+                <span>Google sign-in</span>
+                @if (Model.GoogleLinked)
+                {
+                    <strong>Linked</strong>
+                }
+                else
+                {
+                    <a asp-action="GoogleLink">Link Google account</a>
+                }
+            </div>
+        }
+
+        @if (Model.HasPassword)
+        {
+            <div class="verification-address"><span>CampusX password</span><strong>Set</strong></div>
+        }
+        else if (Model.GoogleLinked && Model.UniversityVerified)
+        {
+            <form asp-action="SetPassword" method="get">
+                <button class="btn-save-custom login-submit" type="submit">Set password</button>
+            </form>
+        }
+        else if (Model.GoogleLinked)
+        {
+            <p class="field-help">Verify your Cairo University email to set a CampusX password.</p>
+        }
+    </div>
+</section>

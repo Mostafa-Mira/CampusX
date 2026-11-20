@@ -2,6 +2,7 @@
 .verification-address { display: grid; gap: 5px; padding: 16px; margin-bottom: 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .verification-address > span { color: var(--muted); font-size: 12px; }
 .verification-address strong { overflow-wrap: anywhere; font-size: 15px; }
+.account-settings-card .verification-address a { width: fit-content; color: var(--green-800); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .verification-notice { padding: 12px 14px; border-radius: 10px; background: var(--mint-100); color: var(--ink); font-size: 13px; }
 .verification-code-form { margin-top: 26px; }
 .verification-code { font-variant-numeric: tabular-nums; letter-spacing: .25em; font-size: 20px !important; }
