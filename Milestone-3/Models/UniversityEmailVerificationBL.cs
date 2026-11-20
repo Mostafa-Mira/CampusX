@@ -12,21 +12,26 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CampusX.Models;
 
-public class UniversityEmailVerificationBL
+public partial class UniversityEmailVerificationBL
 {
+    private const string PasswordSetupPrefix = "set-password:";
     private readonly CampusXDbContext _context;
     private readonly IUniversityEmailSender _sender;
     private readonly TimeProvider _clock;
     private readonly IDataProtector _protector;
+    private readonly IDataProtector _passwordSetupProtector;
+    private readonly UserManager<ApplicationUser> _users;
     private readonly PasswordHasher<UniversityEmailVerification> _hasher = new();
 
     public UniversityEmailVerificationBL(CampusXDbContext context, IUniversityEmailSender sender,
-        TimeProvider clock, IDataProtectionProvider protection)
+        TimeProvider clock, IDataProtectionProvider protection, UserManager<ApplicationUser> users)
     {
         _context = context;
         _sender = sender;
         _clock = clock;
         _protector = protection.CreateProtector("CampusX.UniversityEmailVerification.CodeHash.v1");
+        _passwordSetupProtector = protection.CreateProtector("CampusX.SetPassword.CodeHash.v1");
+        _users = users;
     }
 
     private DateTime Now => _clock.GetUtcNow().UtcDateTime;
@@ -86,11 +91,15 @@ public class UniversityEmailVerificationBL
     public async Task<UniversityVerificationViewModel> GetPageAsync(Guid id)
     {
         var user = await GetAccountAsync(id);
+        return await BuildPageAsync(user, await IsEligibleAsync(user), passwordSetup: false);
+    }
+
+    private async Task<UniversityVerificationViewModel> BuildPageAsync(ApplicationUser user, bool eligible, bool passwordSetup)
+    {
+        var id = user.Id;
         var email = StudentUniversities.NormalizeEmail(user.UniversityEmail);
         var now = Now;
-        var eligible = await IsEligibleAsync(user);
-        var active = await _context.UniversityEmailVerifications.AsNoTracking()
-            .FirstOrDefaultAsync(item => item.UserId == id && item.IsActive && item.Recipient == email);
+        var active = await ActiveChallenge(id, email, passwordSetup).AsNoTracking().FirstOrDefaultAsync();
         var lastSend = await _context.UniversityEmailVerifications.Where(item =>
                 item.UserId == id || item.Recipient == email)
             .MaxAsync(item => (DateTime?)item.CreatedAt);
@@ -127,18 +136,30 @@ public class UniversityEmailVerificationBL
         return model;
     }
 
-    public async Task<(bool Success, string Message)> SendAsync(Guid id)
+    public Task<(bool Success, string Message)> SendAsync(Guid id) => SendForOperationAsync(id, passwordSetup: false);
+
+    private async Task<(bool Success, string Message)> SendForOperationAsync(Guid id, bool passwordSetup)
     {
         UniversityEmailVerification challenge;
         string code;
+        string? passwordStamp = null;
         await using (var transaction = await BeginMutationAsync())
         {
             var user = await GetAccountAsync(id);
-            if (!await IsEligibleAsync(user))
-                return (false, "Use a Cairo University undergraduate email: 14 digits followed by @stud.cu.edu.eg.");
-            if (IsConfirmed(user))
-                return (false, "This university email is already verified.");
-            var email = StudentUniversities.NormalizeEmail(user.UniversityEmail);
+            if (passwordSetup)
+            {
+                if (!await CanSetPasswordAsync(user))
+                    return (false, PasswordSetupUnavailable);
+                passwordStamp = user.SecurityStamp;
+            }
+            else
+            {
+                if (!await IsEligibleAsync(user))
+                    return (false, "Use a Cairo University undergraduate email: 14 digits followed by @stud.cu.edu.eg.");
+                if (IsConfirmed(user))
+                    return (false, "This university email is already verified.");
+            }
+            var email = passwordSetup ? user.VerifiedUniversityEmail! : StudentUniversities.NormalizeEmail(user.UniversityEmail);
             if (await IsDuplicateAsync(id, email))
                 return (false, "This university email is already verified on another account.");
             var now = Now;
@@ -161,7 +182,8 @@ public class UniversityEmailVerificationBL
             {
                 UserId = id, Recipient = email, CreatedAt = now, ExpiresAt = now.AddMinutes(10), IsActive = true
             };
-            challenge.CodeHash = _protector.Protect(_hasher.HashPassword(challenge, BoundCode(challenge, code)));
+            var hash = _hasher.HashPassword(challenge, BoundCode(challenge, code, passwordStamp));
+            challenge.CodeHash = passwordSetup ? PasswordSetupPrefix + _passwordSetupProtector.Protect(hash) : _protector.Protect(hash);
             _context.UniversityEmailVerifications.Add(challenge);
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -169,7 +191,10 @@ public class UniversityEmailVerificationBL
 
         try
         {
-            await _sender.SendCodeAsync(challenge.Recipient, code);
+            if (passwordSetup)
+                await _sender.SendPasswordSetupCodeAsync(challenge.Recipient, code);
+            else
+                await _sender.SendCodeAsync(challenge.Recipient, code);
         }
         catch (Exception exception) when (exception is SmtpException or OperationCanceledException or
                                           InvalidOperationException or FormatException)
@@ -186,9 +211,12 @@ public class UniversityEmailVerificationBL
         await using var finalize = await BeginMutationAsync();
         var current = await GetAccountAsync(id);
         await _context.Entry(challenge).ReloadAsync();
+        var eligible = passwordSetup
+            ? current.SecurityStamp == passwordStamp && await CanSetPasswordAsync(current)
+            : await IsEligibleAsync(current);
         if (!challenge.IsActive || challenge.ExpiresAt <= Now ||
             StudentUniversities.NormalizeEmail(current.UniversityEmail) != challenge.Recipient ||
-            !await IsEligibleAsync(current))
+            !eligible)
         {
             challenge.IsActive = false;
             challenge.CodeHash = string.Empty;
@@ -211,40 +239,11 @@ public class UniversityEmailVerificationBL
         if (IsConfirmed(user))
             return (false, "This code has already been used; your university email is verified.");
         var email = StudentUniversities.NormalizeEmail(user.UniversityEmail);
-        var now = Now;
-        if (await FailedAttemptsAsync(id, email, now) >= 5)
-            return (false, "Too many incorrect attempts. Wait for the 15-minute attempt window before trying again.");
-        var challenge = await _context.UniversityEmailVerifications.SingleOrDefaultAsync(item =>
-            item.UserId == id && item.IsActive && item.Recipient == email);
-        var expired = challenge is not null && challenge.ExpiresAt <= now;
-        var valid = challenge?.SentAt is not null && !expired &&
-            System.Text.RegularExpressions.Regex.IsMatch(code ?? string.Empty, @"\A[0-9]{8}\z");
-        if (valid)
+        var (challenge, error) = await CheckCodeAsync(id, email, code);
+        if (challenge is null)
         {
-            try
-            {
-                valid = _hasher.VerifyHashedPassword(challenge!, _protector.Unprotect(challenge!.CodeHash),
-                    BoundCode(challenge, code!)) != PasswordVerificationResult.Failed;
-            }
-            catch (Exception exception) when (exception is CryptographicException or FormatException)
-            {
-                valid = false;
-            }
-        }
-        if (!valid)
-        {
-            _context.UniversityVerificationAttempts.Add(new UniversityVerificationAttempt
-            {
-                UserId = id, Recipient = email, AttemptedAt = now
-            });
-            if (expired)
-            {
-                challenge!.IsActive = false;
-                challenge.CodeHash = string.Empty;
-            }
-            await _context.SaveChangesAsync();
             await transaction.CommitAsync();
-            return (false, expired ? "Your code has expired. Request a new code." : "The code is incorrect or no longer active.");
+            return (false, error!);
         }
         if (await IsDuplicateAsync(id, email))
             return (false, "This university email is already verified on another account.");
@@ -257,9 +256,7 @@ public class UniversityEmailVerificationBL
                     .SetProperty(item => item.UniversityEmailConfirmed, true));
             if (updated != 1)
                 return (false, "Your account or university email changed. Request a new code.");
-            challenge!.ConsumedAt = now;
-            challenge.IsActive = false;
-            challenge.CodeHash = string.Empty;
+            Consume(challenge);
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
             return (true, "University email verified. You can now access the marketplace.");
@@ -297,8 +294,60 @@ public class UniversityEmailVerificationBL
         return (true, "University email updated. Verify the new address before accessing the marketplace.");
     }
 
-    private static string BoundCode(UniversityEmailVerification item, string code) =>
-        $"{item.Id:N}:{item.UserId:N}:{item.Recipient}:{code}";
+    private IQueryable<UniversityEmailVerification> ActiveChallenge(Guid id, string email, bool passwordSetup) =>
+        _context.UniversityEmailVerifications.Where(item => item.UserId == id && item.IsActive && item.Recipient == email &&
+            item.CodeHash.StartsWith(PasswordSetupPrefix) == passwordSetup);
+
+    private async Task<(UniversityEmailVerification? Challenge, string? Error)> CheckCodeAsync(
+        Guid id, string email, string? code, string? passwordStamp = null)
+    {
+        var now = Now;
+        if (await FailedAttemptsAsync(id, email, now) >= 5)
+            return (null, "Too many incorrect attempts. Wait for the 15-minute attempt window before trying again.");
+
+        var challenge = await ActiveChallenge(id, email, passwordStamp is not null).SingleOrDefaultAsync();
+        var expired = challenge is not null && challenge.ExpiresAt <= now;
+        if (challenge?.SentAt is not null && !expired && code is { Length: 8 } && code.All(char.IsAsciiDigit))
+        {
+            try
+            {
+                var hash = passwordStamp is null ? _protector.Unprotect(challenge.CodeHash)
+                    : _passwordSetupProtector.Unprotect(challenge.CodeHash[PasswordSetupPrefix.Length..]);
+                if (_hasher.VerifyHashedPassword(challenge, hash, BoundCode(challenge, code, passwordStamp))
+                    != PasswordVerificationResult.Failed)
+                    return (challenge, null);
+            }
+            catch (Exception exception) when (exception is CryptographicException or FormatException)
+            {
+                // Unreadable challenges fail closed and count toward the same attempt limit.
+            }
+        }
+
+        _context.UniversityVerificationAttempts.Add(new UniversityVerificationAttempt
+        {
+            UserId = id, Recipient = email, AttemptedAt = now
+        });
+        if (expired)
+        {
+            challenge!.IsActive = false;
+            challenge.CodeHash = string.Empty;
+        }
+        await _context.SaveChangesAsync();
+        return (null, expired ? "Your code has expired. Request a new code." : "The code is incorrect or no longer active.");
+    }
+
+    private void Consume(UniversityEmailVerification challenge)
+    {
+        challenge.ConsumedAt = Now;
+        challenge.IsActive = false;
+        challenge.CodeHash = string.Empty;
+    }
+
+    private static string BoundCode(UniversityEmailVerification item, string code, string? passwordStamp)
+    {
+        var binding = $"{item.Id:N}:{item.UserId:N}:{item.Recipient}:{code}";
+        return passwordStamp is null ? binding : $"{PasswordSetupPrefix}{binding}:{passwordStamp}";
+    }
 
     private static string Mask(string email)
     {

@@ -8,6 +8,7 @@ namespace CampusX.Services;
 public interface IUniversityEmailSender
 {
     Task SendCodeAsync(string recipient, string code);
+    Task SendPasswordSetupCodeAsync(string recipient, string code);
 }
 
 public interface IPasswordRecoveryEmailSender
@@ -23,6 +24,9 @@ public sealed class GmailUniversityEmailSender : IUniversityEmailSender, IPasswo
 
     public Task SendCodeAsync(string recipient, string code) => SendAsync(recipient, "Your CampusX university verification code",
         $"Your CampusX verification code is: {code}\n\nIt expires in 10 minutes and can be used once. Never share this code.\nIf you did not request it, ignore this email.");
+
+    public Task SendPasswordSetupCodeAsync(string recipient, string code) => SendAsync(recipient, "Your CampusX password setup code",
+        $"Use this code on the CampusX Set Password page: {code}\n\nIt expires in 10 minutes and can be used once. Never share this code.\nIf you did not request it, ignore this email.");
 
     public Task SendResetLinkAsync(string recipient, Uri link) => SendAsync(recipient, "Reset your CampusX password",
         $"Open the link below to set a new CampusX password.\n\n{link.AbsoluteUri}\n\nThe link expires in 30 minutes and can be used once. If you did not request a reset, ignore this email.");

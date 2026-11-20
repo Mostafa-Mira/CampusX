@@ -1,5 +1,4 @@
 @model CampusX.ViewModel.UniversityVerificationViewModel
-@inject Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider AuthenticationSchemes
 @{
     ViewData["Title"] = Model.IsConfirmed ? "University email verified" : "Pending University Verification";
 }
@@ -67,10 +66,7 @@
                 <button type="submit" class="btn-cancel-custom">Update University Email</button>
             </form>
         </details>
-        @if (await AuthenticationSchemes.GetSchemeAsync("Google") is not null)
-        {
-            <p class="account-switch"><a asp-action="GoogleLink">Link Google account</a></p>
-        }
+        <p class="account-switch"><a asp-action="Settings">Account settings</a></p>
         <div class="verification-universities">
             <span class="section-eyebrow">SUPPORTED UNIVERSITIES</span>
             <ul>
