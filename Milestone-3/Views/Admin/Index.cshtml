@@ -1,0 +1,16 @@
+﻿@model CampusX.ViewModel.AdminDashboardViewModel
+
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="admin-dashboard">
+    <h1>Dashboard</h1>
+
+    <p>Total users: @Model.TotalUsers</p>
+    <p>Active users: @Model.ActiveUsers</p>
+    <p>Total products: @Model.TotalProducts</p>
+    <p>Available products: @Model.AvailableProducts</p>
+    <p>Sold products: @Model.SoldProducts</p>
+    <p>Pending reports: @Model.PendingReports</p>
+</div>

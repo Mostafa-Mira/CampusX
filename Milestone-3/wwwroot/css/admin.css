@@ -1,0 +1,134 @@
+﻿.admin-dashboard {
+    display: grid;
+    gap: 24px;
+    color: var(--ink);
+}
+
+.admin-heading h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 38px);
+}
+
+.admin-heading p {
+    margin: 6px 0 0;
+    color: var(--muted);
+}
+
+.admin-eyebrow {
+    margin: 0 0 6px !important;
+    color: var(--green-800) !important;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+}
+
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.admin-stat-card,
+.admin-panel {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.admin-stat-card {
+    display: grid;
+    gap: 7px;
+}
+
+    .admin-stat-card span,
+    .admin-stat-card small,
+    .admin-panel-heading p {
+        color: var(--muted);
+    }
+
+    .admin-stat-card strong {
+        font-size: 30px;
+        line-height: 1.2;
+    }
+
+    .admin-stat-card small {
+        font-size: 12px;
+    }
+
+.admin-stat-alert strong {
+    color: var(--danger);
+}
+
+.admin-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+    .admin-panel-heading h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .admin-panel-heading p {
+        margin: 4px 0 0;
+        font-size: 13px;
+    }
+
+    .admin-panel-heading a {
+        color: var(--green-800);
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+.admin-empty {
+    padding: 18px 0;
+    color: var(--muted);
+}
+
+.admin-table-wrap {
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+    .admin-table th,
+    .admin-table td {
+        padding: 13px 10px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+    }
+
+    .admin-table th {
+        color: var(--muted);
+        font-size: 12px;
+    }
+
+    .admin-table td {
+        font-size: 14px;
+    }
+
+@media (max-width: 900px) {
+    .admin-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .admin-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-panel-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

@@ -151,6 +151,7 @@ builder.Services.AddScoped<ApplicationUserBL>();
 builder.Services.AddScoped<CategoryBL>();
 builder.Services.AddScoped<ProductBL>();
 builder.Services.AddScoped<ReportBL>();
+builder.Services.AddScoped<AdminDashboardBL>();
 builder.Services.AddScoped<ContactInquiryBL>();
 builder.Services.Configure<EmailSmtpOptions>(builder.Configuration.GetSection(EmailSmtpOptions.SectionName));
 builder.Services.AddScoped<GmailUniversityEmailSender>();
