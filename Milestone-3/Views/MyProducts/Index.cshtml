@@ -1,5 +1,52 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model CampusX.ViewModels.MyProductsViewModel
+@using CampusX.Enums
+
 @{
+    ViewData["Title"] = "My Products";
 }
+
+<section class="catalog" aria-labelledby="my-products-title">
+    @if (TempData["ProductSuccess"] is string success)
+    {
+        <p class="account-success" role="status">@success</p>
+    }
+    @if (TempData["SampleProductMessage"] is string message)
+    {
+        <p class="account-success" role="status">@message</p>
+    }
+
+    <div class="catalog-heading">
+        <div>
+            <span class="section-eyebrow">YOUR CAMPUS LISTINGS</span>
+            <h2 id="my-products-title">My Products</h2>
+            <p>Listings you have posted on CampusX.</p>
+        </div>
+        <span class="product-count">
+            @Model.AvailableCount available · @Model.SoldCount sold
+        </span>
+    </div>
+
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state" role="status">
+            <div class="empty-icon" aria-hidden="true">▦</div>
+            <h3>You haven't listed anything yet</h3>
+            <p>Post your first study item and it will show up here.</p>
+            <a class="btn-save-custom empty-reset" asp-controller="Products" asp-action="Add">Add Product</a>
+        </div>
+    }
+    else
+    {
+        <div class="product-grid">
+            @foreach (var item in Model.Items)
+            {
+                <div class="my-product-item">
+                    <div class="details-label-row">
+                        <span class="product-status">@(item.Status == ProductStatus.Sold ? "Sold" : "Available")</span>
+                    </div>
+                    <partial name="_ProductCard" model="item.Card" />
+                </div>
+            }
+        </div>
+    }
+</section>

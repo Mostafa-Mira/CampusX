@@ -88,7 +88,7 @@
                             <li><a class="sidebar-link @(isHome ? "is-active" : null)" aria-current="@(isHome ? "page" : null)" asp-controller="Home" asp-action="Index"><span class="nav-icon" aria-hidden="true">▦</span> Browse Products</a></li>
                             @if (isStudent)
                             {
-                                <li><span class="sidebar-link is-disabled"><span class="nav-icon" aria-hidden="true">▤</span> My Products <small>Soon</small></span></li>
+                                <li><a class="sidebar-link @(isMyProducts ? "is-active" : null)" aria-current="@(isMyProducts ? "page" : null)" asp-controller="MyProducts" asp-action="Index"><span class="nav-icon" aria-hidden="true">▤</span> My Products</a></li>
                                 <li><a class="sidebar-link" asp-controller="Products" asp-action="Add"><span class="nav-icon" aria-hidden="true">＋</span> Add Product</a></li>
                             }
                             <li><a class="sidebar-link" asp-controller="Account" asp-action="UniversityEmail"><span class="nav-icon" aria-hidden="true">◇</span> University Email</a></li>
