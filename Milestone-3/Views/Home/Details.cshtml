@@ -1,5 +1,6 @@
 @model CampusX.ViewModels.ProductDetailsViewModel
 @using System.Security.Claims
+@using CampusX.Enums
 @using CampusX.Services
 @using Microsoft.AspNetCore.Authorization
 @inject IWebHostEnvironment Environment
@@ -105,6 +106,12 @@
                     @if (canEdit)
                     {
                         <a asp-controller="Products" asp-action="Edit" asp-route-id="@Model.Id" class="product-detail-action product-detail-edit">Edit Product</a>
+                    }
+                    @if (canEdit && Model.Status == ProductStatus.Available)
+                    {
+                        <form asp-controller="MyProducts" asp-action="MarkSold" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Mark this product as sold? It will be hidden from the marketplace.');">
+                            <button type="submit" class="product-detail-action product-detail-edit">Mark as Sold</button>
+                        </form>
                     }
                     @if (canRemove)
                     {

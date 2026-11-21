@@ -4,11 +4,11 @@ using CampusX.Services;
 using CampusX.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CampusX.Controllers;
 
-// My Products: lists only the signed-in student's own (non-deleted) listings.
-// Kept in its own controller so ProductsController (Add/Edit) is not touched.
+
 [Authorize(Policy = MarketplaceAccessPolicies.Student)]
 [Route("products/mine")]
 public class MyProductsController : Controller
@@ -23,7 +23,7 @@ public class MyProductsController : Controller
     [HttpGet("")]
     public IActionResult Index()
     {
-        // The seller id always comes from the authenticated identity, never from the request.
+        
         if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var studentId))
             return Forbid();
 
@@ -51,5 +51,33 @@ public class MyProductsController : Controller
         }
 
         return View(vm);
+    }
+    
+    [HttpPost("{id:guid}/sold")]
+    [ValidateAntiForgeryToken]
+    public IActionResult MarkSold([FromRoute] Guid id)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var studentId))
+            return Forbid();
+
+        try
+        {
+            _productBL.MarkSold(studentId, id);
+            TempData["ProductSuccess"] = "Product marked as sold.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return NotFound();
+        }
+
+        return RedirectToAction("Details", "Home", new { id });
     }
 }
