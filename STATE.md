@@ -33,14 +33,15 @@ Use [AGENTS.md](AGENTS.md) for approved scope and durable rules and the [MVC REA
 - **2026-11-20, this sync:** `dotnet build Milestone-3/CampusX.csproj --no-restore` passed with 0 warnings and 0 errors. Reviewed tracked sources, migration history in the repository, and documentation. No application startup or SQL connection was used for this sync.
 - **2026-11-20, earlier local sessions:** The user confirmed real Gmail-to-university inbox delivery and real Google OAuth signup/sign-in. Local Edge and isolated SQL testing exercised Team Test provisioning and marketplace protections, including the app running under Production settings. A redacted configuration check confirmed the Team Test startup guard after updating remote SQL TLS settings, without contacting MonsterASP.NET.
 - **Earlier local checks:** Simulated credits and promotion ordering, registration, and a valid 2 MB image upload were exercised. The repository contains no checked-in automated test suite. Local test evidence does not establish deployment or acceptance.
-### My Products (added 2026-11-20)
+### My Products (added 2026-11-20, updated 2026-11-21)
 
-**Status: Partial.** Implemented but not yet built, run, or browser-tested. The authoring environment had no NuGet access, so `dotnet build` was not executed. Local build and manual verification are required before this is treated as Completed.
+**Status: Completed locally.** Built and manually verified in the browser against the shared database by the author.
 
 **What it does**
 
-- Adds a page at `/products/mine` listing the signed-in student's own products, both Available and Sold, newest first.
-- Shows a header with counts ("N available · N sold"), then product cards using the existing `_ProductCard` partial. Each card has a status badge and an Edit link to the existing `Products/Edit` page.
+- Adds a page at `/products/mine` listing the signed-in student's own products, both Available and Sold.
+- Shows a header with counts ("N available · N sold"), then product cards using the existing `_ProductCard` partial with a status badge above each card.
+- Cards have no separate Edit link. Editing, deleting, and marking as sold are done from the product's Details page ("View details").
 - Empty state: a message and an "Add Product" button when the student has no listings.
 - The sidebar "My Products" item in `_Layout` changed from a disabled "Soon" placeholder to a real link, highlighted when active.
 
@@ -48,8 +49,8 @@ Use [AGENTS.md](AGENTS.md) for approved scope and durable rules and the [MVC REA
 
 | File | Purpose |
 | --- | --- |
-| `Controllers/MyProductsController.cs` | `GET /products/mine`. `[Authorize(Policy = MarketplaceAccessPolicies.Student)]`. Reads the student id from `ClaimTypes.NameIdentifier` only, never from the request. Calls `ProductBL.GetBySeller` and maps to `ProductCardViewModel`. Read-only: no database writes. |
-| `ViewModel/MyProductsViewModel.cs` | `MyProductsViewModel` (item list, `AvailableCount`, `SoldCount`) and `MyProductItemViewModel` (card + `ProductStatus`). Uses the `CampusX.ViewModels` namespace. |
+| `Controllers/MyProductsController.cs` | `GET /products/mine`. `[Authorize(Policy = MarketplaceAccessPolicies.Student)]`. Reads the student id from `ClaimTypes.NameIdentifier` only, never from the request. Calls `ProductBL.GetBySeller` and maps to `ProductCardViewModel`. |
+| `ViewModel/MyProductsViewModel.cs` | `MyProductsViewModel` (item list, `AvailableCount`, `SoldCount`) and `MyProductItemViewModel` (card + `ProductStatus`). |
 | `Views/MyProducts/Index.cshtml` | Page markup: heading and counts, `TempData` success messages, product grid, empty state. |
 
 **Existing files changed (minimal)**
@@ -57,28 +58,55 @@ Use [AGENTS.md](AGENTS.md) for approved scope and durable rules and the [MVC REA
 | File | Change |
 | --- | --- |
 | `Views/Shared/_Layout.cshtml` | Added `isMyProducts` flag; replaced the disabled My Products list item with a link to `MyProducts/Index`. |
-| `Models/ProductBL.cs` | `GetBySeller` now includes `Category` so the category name appears on cards. It had no other callers. |
-| `wwwroot/css/campus-ui.css` | Appended `.my-product-item` and `.my-product-actions` rules at the end of the file. No existing rules changed. |
+| `Models/ProductBL.cs` | `GetBySeller` now includes `Category` so the category name appears on cards. |
+| `wwwroot/css/campus-ui.css` | Appended `.my-product-item` rules at the end of the file. No existing rules changed. |
 
 **Design decisions**
 
-- Implemented as a separate controller so `ProductsController` (Add/Edit, owned by teammates) was not modified and merge conflicts are avoided.
-- Uses the existing `ProductBL` instead of adding direct `DbContext` access in the controller, following `AGENTS.md`.
-- `_ProductCard`, Home, Details, Revenue, Account, models, migrations, `DbContext`, and `Program.cs` were not changed. There are no schema or migration changes.
-- Authorization is enforced server-side. Hiding the sidebar link for non-students is a convenience only.
+- Separate controller, so `ProductsController` (Add/Edit) was not modified and merge conflicts are avoided.
 
-**Not included / still pending**
+  ### Mark Product as Sold (added 2026-11-21)
 
-- Mark as Sold: no controller action or button yet. `ProductBL.MarkSold` already exists and checks ownership; it needs an action with `[HttpPost]` and `[ValidateAntiForgeryToken]`, plus a button.
-- No Delete from this page. The existing Development-only delete flow on Details is unchanged.
-- Sold items are shown here but remain excluded from the public Home listing (existing behavior).
-- Cards show the seller as "You". Contact phone shows only if the product has one.
+**Status: Completed locally.** Built and manually verified in the browser against the shared database by the author.
 
-**Verification still required**
+**What it does**
 
-1. `dotnet build CampusX.csproj` succeeds with no new warnings.
-2. Signed in as a student: only that student's products appear, with correct Available/Sold badges and category names.
-3. Signed out or non-student: access is redirected or denied, not shown.
-4. Another student's products never appear.
-5. Empty state, Edit link, active sidebar highlight, dark mode, and mobile/tablet layouts.
-6. When using the shared MonsterASP database, products appear only under the seller account that owns them.
+- On a product's Details page, the seller sees a **Mark as Sold** button next to **Edit Product**. The button is shown only when the signed-in user is the product's seller, passes the Student policy, and the product status is `Available`.
+- Clicking it shows a browser confirmation. On confirm, the product status changes to `Sold` and the user returns to the same Details page with the message "Product marked as sold."
+- A sold product disappears from the public Home listing (Home already filters to `Available`) and remains visible to its seller in My Products with a "Sold" badge and updated counts.
+- There is no UI to revert a product to Available.
+
+**Files changed**
+
+| File | Change |
+| --- | --- |
+| `Controllers/MyProductsController.cs` | Added `POST /products/mine/{id}/sold` (`MarkSold`). Student policy, `[ValidateAntiForgeryToken]`, seller id from the auth claim. Calls the existing `ProductBL.MarkSold`, which enforces ownership. `UnauthorizedAccessException` returns Forbid; `InvalidOperationException` and `DbUpdateConcurrencyException` return NotFound. Redirects to `Home/Details`. Added `using Microsoft.EntityFrameworkCore;`. |
+| `Views/Home/Details.cshtml` | Added `@using CampusX.Enums` and a small form with a **Mark as Sold** button inside `product-details-actions`, after Edit Product and before Delete. Reuses existing button classes; no new CSS. |
+
+**Design decisions**
+
+- The action lives in `MyProductsController` (the author's own file) so `ProductsController` and `ProductsDeleteController` were not modified. The only shared file touched is `Details.cshtml`, with one additive block.
+- No changes to `ProductBL`, models, migrations, or the database schema. `ProductBL.MarkSold` and `Product.ChangeStatus` already existed and are reused.
+- Server-side ownership check: another student cannot mark someone else's product as sold even by posting directly.
+- Unlike the delete flow (Development-only), Mark as Sold is available in all environments.
+
+**Known notes**
+
+- Visual Studio may show TS2683 ("'this' implicitly has type 'any'") on the image `onerror` handler in `Details.cshtml`. This is an IntelliSense warning from the native TypeScript compiler on existing teammate code, not a build error, and it was not changed.
+- Marking as sold is permanent from the UI. A "Mark as Available" action would need a new `ProductBL` method and endpoint.
+- Edit is still allowed on sold products (existing behavior, not changed).
+
+**Verification done**
+
+1. Mark as Sold button appears on the seller's own available product Details page.
+2. After confirming, status changes to Sold and the success message appears.
+3. Product disappears from Home and remains in My Products with updated counts.
+
+**Still worth checking**
+
+- Another student's product Details page does not show the button.
+- A direct POST to `/products/mine/{id}/sold` for another student's product is rejected (Forbid).
+- Signed-out or non-student access is denied.
+- Uses the existing `ProductBL` instead of direct `DbContext` access in the controller, following `AGENTS.md`.
+- `_ProductCard`, Home, Revenue, Account, models, migrations, `DbContext`, and `Program.cs` were not changed. No schema or migration changes.
+- Authorization is enforced server-side; hiding UI is a convenience only.
