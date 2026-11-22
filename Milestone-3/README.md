@@ -3,7 +3,8 @@
 This project is an ASP.NET Core MVC application targeting .NET 8, with EF Core and SQL Server. Its structure follows the instructor's MVC example while retaining CampusX-specific entities.
 
 - `Models/`: application entities and `*BL` classes for business operations.
-- `Data/DbContexts/`: the EF Core context.
+- `Data/Repositories/`: scoped EF Core data access for products and categories.
+- `Data/DbContexts/`: the scoped EF Core context.
 - `Data/Configurations/`: one mapping class per entity.
 - `Data/Migrations/`: the baseline and subsequent product, revenue, Identity, and verification migrations.
 - `Controllers/` and `Views/`: the MVC account, marketplace, listing, and simulated revenue workflows. See [STATE.md](../STATE.md) for verification, incomplete features, and deployment status.
@@ -82,6 +83,12 @@ For isolated local SQL testing, the separate `--provision-tester` command and `D
 
 ## Listings and admin operations
 
-The green marketplace includes responsive catalog cards, product details, name search, category and price filters, and sorting. The SRS leaves category administration and the exact seller contact mechanism open. The Add/Edit views use fixed category options, and the controller can create missing category records on save. Review [STATE.md](../STATE.md) before changing either workflow.
+### Product CRUD lifecycle
 
-Development listing controls appear on product details. `POST /dev/products/{id}/delete` hard-deletes an eligible Student's own listing when its relationships permit it. The separate `POST /dev/products/{id}/remove` action soft-deletes for eligible Admins. Both actions require antiforgery checks. A full Admin Dashboard and real Payment Integration are tracked as remaining work in [STATE.md](../STATE.md).
+`Razor view → MVC controller → BL → repository → EF Core DbContext → SQL Server`
+
+1. **Read.** Home, Details, and My Products call `ProductBL`. It defines search, filters, visibility, and featured ordering. `ProductRepository` runs those queries in SQL. `CategoryBL` reads categories through `CategoryRepository`. Home passes its loaded categories to both the chips and the sidebar.
+2. **Add and edit.** `ProductsController` handles form validation, uploads, and redirects. `ProductBL` uses the signed-in student ID, checks ownership on edit, and resolves the submitted category. Both repositories share the request's DbContext, so any new category and the product are saved together.
+3. **Delete and mark sold.** `ProductsDeleteController` and `MyProductsController` pass the signed-in actor to `ProductBL`. BL checks eligibility and ownership or Admin permissions. `ProductRepository` saves the change. Sold listings leave Home and remain in the seller's My Products.
+
+Development listing controls appear on Product Details. `POST /dev/products/{id}/delete` hard-deletes an eligible Student's own listing when its relationships permit it. `POST /dev/products/{id}/remove` soft-deletes for eligible Admins. Listing mutations require antiforgery checks. Add/Edit keep their fixed category choices. See [STATE.md](../STATE.md) for known limitations and remaining work.

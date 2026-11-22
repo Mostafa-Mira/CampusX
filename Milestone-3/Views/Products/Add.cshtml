@@ -23,7 +23,7 @@
         </div>
         <div class="form-row">
             <div class="form-field">
-                <label asp-for="College">College (Optional)</label>
+                <label asp-for="College" for="collegeSelect">College (Optional)</label>
                 <select asp-for="College" id="collegeSelect" class="form-control-custom">
                     <option value="">Select College (Optional)...</option>
                     <option value="Medicine">Medicine (طب بشري)</option>
@@ -35,7 +35,7 @@
                 <span asp-validation-for="College"></span>
             </div>
             <div class="form-field">
-                <label asp-for="Category"></label>
+                <label asp-for="Category" for="categorySelect"></label>
                 <select asp-for="Category" id="categorySelect" class="form-control-custom">
                     <option value="">-- Select Category --</option>
                 </select>
@@ -48,13 +48,13 @@
             <span asp-validation-for="PhoneNumber"></span>
         </div>
         <div class="form-field">
-            <label asp-for="ImageFile"></label>
+            <label asp-for="ImageFile" for="customFile"></label>
             <input asp-for="ImageFile" id="customFile" class="form-control-custom" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" aria-describedby="image-help" />
             <small class="field-help" id="image-help">JPG, PNG, WEBP or GIF, up to 5 MB.</small>
             <span asp-validation-for="ImageFile"></span>
         </div>
         <div class="form-field">
-            <label asp-for="Description"></label>
+            <label asp-for="Description" for="productDescription"></label>
             <textarea asp-for="Description" id="productDescription" class="form-control-custom" rows="4" maxlength="300" placeholder="Describe the condition, edition, or details (max 300 characters)..."></textarea>
             <div class="description-meta">
                 <span asp-validation-for="Description"></span>

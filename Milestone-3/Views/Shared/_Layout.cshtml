@@ -108,7 +108,8 @@
                             <label class="filter-label" for="filter-category">Categories</label>
                             <select id="filter-category" class="filter-control" name="categoryId" form="search-form">
                                 <option value="">All categories</option>
-                                @foreach (var cat in LayoutCategoryBL.GetAll())
+                                @foreach (var cat in Model is CampusX.ViewModels.HomeIndexViewModel home
+                                    ? home.Categories : LayoutCategoryBL.GetAll())
                                 {
                                     <option value="@cat.Id" selected="@(Context.Request.Query["categoryId"] == cat.Id.ToString())">@cat.Name</option>
                                 }

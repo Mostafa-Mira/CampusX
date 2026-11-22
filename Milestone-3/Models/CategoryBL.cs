@@ -1,15 +1,10 @@
-using CampusX.Data.DbContexts;
+using CampusX.Data.Repositories;
 
 namespace CampusX.Models;
 
-public class CategoryBL
+public class CategoryBL(CategoryRepository categories)
 {
-    private readonly CampusXDbContext _context;
+    public List<Category> GetAll() => categories.ListByName();
 
-    public CategoryBL(CampusXDbContext context) => _context = context;
-
-    public List<Category> GetAll() =>
-        _context.Categories.OrderBy(category => category.Name).ToList();
-
-    public Category? GetById(Guid id) => _context.Categories.Find(id);
+    public Category? GetById(Guid id) => categories.Find(id);
 }

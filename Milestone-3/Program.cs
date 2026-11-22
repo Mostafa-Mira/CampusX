@@ -1,5 +1,6 @@
 using CampusX.Data.DbContexts;
 using CampusX.Data.Development;
+using CampusX.Data.Repositories;
 using CampusX.Data.Seed;
 using CampusX.Enums;
 using CampusX.Models;
@@ -150,6 +151,8 @@ builder.Services.AddDbContext<CampusXDbContext>(options =>
 builder.Services.AddScoped<ApplicationUserBL>();
 builder.Services.AddScoped<CategoryBL>();
 builder.Services.AddScoped<ProductBL>();
+builder.Services.AddScoped<ProductRepository>();
+builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<ReportBL>();
 builder.Services.AddScoped<AdminDashboardBL>();
 builder.Services.AddScoped<ContactInquiryBL>();
