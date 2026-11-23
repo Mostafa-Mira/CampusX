@@ -10,11 +10,11 @@ public class ProductBL
 {
     private readonly CampusXDbContext _context;
     private readonly DevelopmentTesterAccess _testerAccess;
-    private readonly ProductRepository _products;
-    private readonly CategoryRepository _categories;
+    private readonly IProductRepository _products;
+    private readonly ICategoryRepository _categories;
 
     public ProductBL(CampusXDbContext context, DevelopmentTesterAccess testerAccess,
-        ProductRepository products, CategoryRepository categories)
+        IProductRepository products, ICategoryRepository categories)
     {
         _context = context;
         _testerAccess = testerAccess;
@@ -177,7 +177,7 @@ public class ProductBL
 
     private static void RequireOwner(Guid studentId, Product product)
     {
-        if (product.SellerId != studentId)
+        if (!product.IsOwnedBy(studentId))
             throw new UnauthorizedAccessException("Only the seller can manage this product.");
     }
 

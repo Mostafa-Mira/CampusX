@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Authorization.Policy;
 
 namespace CampusX.Services;
 
-public sealed class MarketplaceAuthorizationResultHandler : IAuthorizationMiddlewareResultHandler
+public sealed class MarketplaceAuthorizationResultHandler(MarketplaceAccessEvaluator access)
+    : IAuthorizationMiddlewareResultHandler
 {
     private readonly AuthorizationMiddlewareResultHandler _defaultHandler = new();
 
@@ -12,7 +13,6 @@ public sealed class MarketplaceAuthorizationResultHandler : IAuthorizationMiddle
     {
         if (result.Forbidden && policy.Requirements.OfType<MarketplaceAccessRequirement>().Any())
         {
-            var access = context.RequestServices.GetRequiredService<MarketplaceAccessHandler>();
             var status = await access.GetStatusAsync(context.User);
             if (status == MarketplaceAccessStatus.PendingVerification)
             {

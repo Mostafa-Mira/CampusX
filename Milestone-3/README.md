@@ -35,6 +35,13 @@ Forgot Password uses Gmail SMTP and requires `PasswordRecovery:PublicOrigin` to 
 
 The default and fallback authorization policies require an authenticated, existing, unblocked account with a Cairo undergraduate email (exactly 14 ASCII digits at `stud.cu.edu.eg`), `UniversityEmailConfirmed=true`, and a matching `VerifiedUniversityEmail` binding written only after code verification. The server checks eligibility and the current role. Personal email confirmation, Google claims, and the Admin role do not confer university eligibility. Guests are challenged to Login, unverified accounts go to `/Account/PendingUniversityVerification`, and blocked or missing accounts receive HTTP 403. The [Development tester setup](#shared-team-tester-access) provides the approved local exception for enrolled Students.
 
+### Identity and authorization lifecycle
+
+1. **Identity and authentication.** `Program.cs` calls `AddCampusXIdentity` to register the Identity EF store, managers, cookies, and optional Google OAuth. `AccountController.SignUp` calls `ApplicationUserBL.RegisterAsync`, which creates the account through `UserManager`. `Login` calls `ApplicationUserBL.AuthenticateAsync` for the password check. `SignInManager` issues and clears the session cookie.
+2. **Roles and claims.** `CampusXUserClaimsPrincipalFactory` issues the user GUID and the Student or Admin role claim. The stored `ApplicationUser.Role` is the current role used in authorization decisions.
+3. **Policies.** `AddCampusXAuthorization` registers Marketplace, Student, Admin, and AuthenticatedOnly access. `MarketplaceAccessHandler` uses `MarketplaceAccessEvaluator` to check current role, account status, university verification, and the Development tester exception. `MarketplaceAuthorizationResultHandler` handles redirect and denial outcomes.
+4. **Product resources.** `HomeController.Details` loads the listing through `ProductBL.GetById` and calls `IAuthorizationService` with that product. `ProductOwnershipHandler` uses `Product.IsOwnedBy` for the ProductOwner requirement. The Student and Admin policies determine which actions the view displays. Edit, Delete, and Mark Sold also enforce ownership inside `ProductBL` before saving. Admin removal has its own permission. EF checks seller and deletion state when saving. `RevenueBL.ActivatePromotion` checks ownership within its existing transaction.
+
 ### University email verification
 
 Cairo undergraduate verification is enabled. Ain Shams, Alexandria and Helwan remain Coming Soon. Registration still uses Identity and keeps login and university emails separate. The pending page supports sending/resending an eight-digit code, verification and changing the university email. Verified users can manage the address through the University Email navigation entry. Changing it clears verification immediately; one university email can be verified on only one account at a time.
@@ -85,9 +92,9 @@ For isolated local SQL testing, the separate `--provision-tester` command and `D
 
 ### Product CRUD lifecycle
 
-`Razor view → MVC controller → BL → repository → EF Core DbContext → SQL Server`
+`Razor view → MVC controller → BL → repository interface → repository implementation → EF Core DbContext → SQL Server`
 
-1. **Read.** Home, Details, and My Products call `ProductBL`. It defines search, filters, visibility, and featured ordering. `ProductRepository` runs those queries in SQL. `CategoryBL` reads categories through `CategoryRepository`. Home passes its loaded categories to both the chips and the sidebar.
+1. **Read.** Home, Details, and My Products call `ProductBL`. It defines search, filters, visibility, and featured ordering. BL uses `IProductRepository` for product data and `ICategoryRepository` for category data. `CategoryBL` also uses `ICategoryRepository`. DI binds each interface to its existing scoped EF implementation. Home passes its loaded categories to both the chips and the sidebar.
 2. **Add and edit.** `ProductsController` handles form validation, uploads, and redirects. `ProductBL` uses the signed-in student ID, checks ownership on edit, and resolves the submitted category. Both repositories share the request's DbContext, so any new category and the product are saved together.
 3. **Delete and mark sold.** `ProductsDeleteController` and `MyProductsController` pass the signed-in actor to `ProductBL`. BL checks eligibility and ownership or Admin permissions. `ProductRepository` saves the change. Sold listings leave Home and remain in the seller's My Products.
 

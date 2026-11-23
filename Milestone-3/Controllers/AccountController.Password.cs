@@ -13,14 +13,13 @@ public partial class AccountController
     [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly), HttpGet]
     public async Task<IActionResult> Settings([FromServices] IAuthenticationSchemeProvider schemes)
     {
-        var manager = _signInManager.UserManager;
-        var user = await manager.GetUserAsync(User);
+        var user = await _userManager.GetUserAsync(User);
         if (user is not { IsBlocked: false })
             return DeniedVerification();
 
         return View(new AccountSettingsViewModel(await schemes.GetSchemeAsync(Google) is not null,
-            (await manager.GetLoginsAsync(user)).Any(login => login.LoginProvider == Google),
-            await manager.HasPasswordAsync(user),
+            (await _userManager.GetLoginsAsync(user)).Any(login => login.LoginProvider == Google),
+            await _userManager.HasPasswordAsync(user),
             StudentUniversities.HasVerifiedEmail(user.UniversityEmail, user.VerifiedUniversityEmail, user.UniversityEmailConfirmed)));
     }
 

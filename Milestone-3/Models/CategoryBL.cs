@@ -2,7 +2,7 @@ using CampusX.Data.Repositories;
 
 namespace CampusX.Models;
 
-public class CategoryBL(CategoryRepository categories)
+public class CategoryBL(ICategoryRepository categories)
 {
     public List<Category> GetAll() => categories.ListByName();
 

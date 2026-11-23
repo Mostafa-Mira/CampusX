@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @inject CampusX.Models.CategoryBL LayoutCategoryBL
 @inject IAuthorizationService Authorization
-@inject MarketplaceAccessHandler MarketplaceAccess
+@inject MarketplaceAccessEvaluator MarketplaceAccess
 @inject DevelopmentTesterAccess TesterAccess
 @{
     var isStudent = (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Student)).Succeeded;

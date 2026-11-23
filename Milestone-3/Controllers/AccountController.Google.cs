@@ -32,7 +32,7 @@ public partial class AccountController
     }
 
     [AllowAnonymous, HttpGet]
-    public async Task<IActionResult> GoogleCallback([FromServices] MarketplaceAccessHandler access)
+    public async Task<IActionResult> GoogleCallback([FromServices] MarketplaceAccessEvaluator access)
     {
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction(nameof(UniversityEmail));
@@ -41,7 +41,7 @@ public partial class AccountController
         if (info is null)
             return await GoogleFailureAsync("Google sign-in expired or could not finish. Please try again.");
 
-        var linked = await _signInManager.UserManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+        var linked = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
         if (linked is not null)
         {
             var status = await access.GetStatusAsync(linked.Id);
@@ -62,7 +62,7 @@ public partial class AccountController
         var email = VerifiedGoogleEmail(info);
         if (email is null)
             return await GoogleFailureAsync("Google did not provide a verified email for registration.");
-        if (await _signInManager.UserManager.FindByEmailAsync(email) is not null)
+        if (await _userManager.FindByEmailAsync(email) is not null)
             return await ExistingGoogleEmailAsync();
 
         return View("GoogleRegistration", new GoogleRegistrationViewModel
@@ -86,9 +86,9 @@ public partial class AccountController
         var email = VerifiedGoogleEmail(info);
         if (email is null)
             return await GoogleFailureAsync("Google did not provide a verified email for registration.");
-        if (await _signInManager.UserManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey) is not null)
+        if (await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey) is not null)
             return await GoogleFailureAsync("This Google account is already registered. Sign in with Google.");
-        if (await _signInManager.UserManager.FindByEmailAsync(email) is not null)
+        if (await _userManager.FindByEmailAsync(email) is not null)
             return await ExistingGoogleEmailAsync();
 
         model.GoogleEmail = email;
@@ -121,7 +121,7 @@ public partial class AccountController
     [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly), HttpGet]
     public async Task<IActionResult> GoogleLink([FromServices] IAuthenticationSchemeProvider schemes, bool googleError = false)
     {
-        var user = await _signInManager.UserManager.GetUserAsync(User);
+        var user = await _userManager.GetUserAsync(User);
         if (user is not { IsBlocked: false })
             return DeniedVerification();
         if (await schemes.GetSchemeAsync(Google) is null)
@@ -130,18 +130,18 @@ public partial class AccountController
         if (googleError)
             ViewData["GoogleError"] = "Google linking was cancelled or could not finish. Please try again.";
 
-        var logins = await _signInManager.UserManager.GetLoginsAsync(user);
+        var logins = await _userManager.GetLoginsAsync(user);
         return View(new GoogleLinkViewModel { IsLinked = logins.Any(login => login.LoginProvider == Google) });
     }
 
     [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly), HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> StartGoogleLink([FromServices] IAuthenticationSchemeProvider schemes)
     {
-        var user = await _signInManager.UserManager.GetUserAsync(User);
+        var user = await _userManager.GetUserAsync(User);
         if (user is not { IsBlocked: false })
             return DeniedVerification();
-        if (!await _signInManager.UserManager.HasPasswordAsync(user) ||
-            (await _signInManager.UserManager.GetLoginsAsync(user)).Any(login => login.LoginProvider == Google))
+        if (!await _userManager.HasPasswordAsync(user) ||
+            (await _userManager.GetLoginsAsync(user)).Any(login => login.LoginProvider == Google))
             return RedirectToAction(nameof(GoogleLink));
 
         return await StartGoogleAsync(schemes, LinkPurpose, nameof(GoogleLinkCallback), userId: user.Id.ToString());
@@ -150,7 +150,7 @@ public partial class AccountController
     [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly), HttpGet]
     public async Task<IActionResult> GoogleLinkCallback()
     {
-        var user = await _signInManager.UserManager.GetUserAsync(User);
+        var user = await _userManager.GetUserAsync(User);
         if (user is not { IsBlocked: false })
             return DeniedVerification();
 
@@ -169,8 +169,7 @@ public partial class AccountController
     [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly), HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ConfirmGoogleLink(GoogleLinkViewModel model)
     {
-        var manager = _signInManager.UserManager;
-        var user = await manager.GetUserAsync(User);
+        var user = await _userManager.GetUserAsync(User);
         if (user is not { IsBlocked: false })
             return DeniedVerification();
 
@@ -181,26 +180,26 @@ public partial class AccountController
 
         model.GoogleEmail = email;
         model.IsLinked = false;
-        if (!ModelState.IsValid || !await manager.CheckPasswordAsync(user, model.Password))
+        if (!ModelState.IsValid || !await _userManager.CheckPasswordAsync(user, model.Password))
         {
             ModelState.AddModelError(nameof(model.Password), "Enter your current CampusX password to link Google.");
             model.Password = string.Empty;
             return View("GoogleLink", model);
         }
 
-        var owner = await manager.FindByEmailAsync(email);
-        var linked = await manager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+        var owner = await _userManager.FindByEmailAsync(email);
+        var linked = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
         if ((owner is not null && owner.Id != user.Id) || (linked is not null && linked.Id != user.Id))
             return await GoogleFailureAsync("This Google account belongs to a different CampusX account.", linking: true);
 
         if (linked is null)
         {
-            if ((await manager.GetLoginsAsync(user)).Any(login => login.LoginProvider == Google))
+            if ((await _userManager.GetLoginsAsync(user)).Any(login => login.LoginProvider == Google))
                 return await GoogleFailureAsync("A Google account is already linked to this CampusX account.", linking: true);
 
             try
             {
-                if (!(await manager.AddLoginAsync(user, info)).Succeeded)
+                if (!(await _userManager.AddLoginAsync(user, info)).Succeeded)
                     return await GoogleFailureAsync("Google could not be linked. Please start again.", linking: true);
             }
             catch (DbUpdateException exception) when (exception.InnerException is SqlException { Number: 2601 or 2627 })

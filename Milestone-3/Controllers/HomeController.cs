@@ -1,5 +1,6 @@
 
 using CampusX.Models;
+using CampusX.Services;
 using CampusX.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -11,12 +12,15 @@ public class HomeController : Controller
     private readonly ProductBL _productBL;
     private readonly IWebHostEnvironment _environment;
     private readonly CategoryBL _categoryBL;
+    private readonly IAuthorizationService _authorization;
 
-    public HomeController(ProductBL productBL, IWebHostEnvironment environment, CategoryBL categoryBL)
+    public HomeController(ProductBL productBL, IWebHostEnvironment environment, CategoryBL categoryBL,
+        IAuthorizationService authorization)
     {
         _productBL = productBL;
         _environment = environment;
         _categoryBL = categoryBL;
+        _authorization = authorization;
     }
 
     public IActionResult Index(string? searchTerm, Guid? categoryId,
@@ -67,17 +71,26 @@ public class HomeController : Controller
         return View("Index", homeVM);
     }
 
-    public IActionResult Details(Guid id)
+    public async Task<IActionResult> Details(Guid id)
     {
         Product? product = _productBL.GetById(id);
 
         if (product is null)
             return NotFound();
 
+        var isDevelopment = _environment.IsDevelopment();
+        var canEdit = (await _authorization.AuthorizeAsync(User, product, MarketplaceAccessPolicies.ProductOwner)).Succeeded &&
+            (await _authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Student)).Succeeded;
+        var canModerate = isDevelopment &&
+            (await _authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Admin)).Succeeded;
+
         ProductDetailsViewModel detailsVM = new()
         {
             Id = product.Id,
             SellerId = product.SellerId,
+            CanEdit = canEdit,
+            CanModerate = canModerate,
+            CanRemove = canModerate || (isDevelopment && canEdit),
             Name = product.Name,
             Description = product.Description,
             Price = product.Price,

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CampusX.Data.Repositories;
 
-public sealed class CategoryRepository(CampusXDbContext context)
+public sealed class CategoryRepository(CampusXDbContext context) : ICategoryRepository
 {
     public List<Category> ListByName() =>
         context.Categories.OrderBy(category => category.Name).ToList();

@@ -1,21 +1,9 @@
 @model CampusX.ViewModels.ProductDetailsViewModel
-@using System.Security.Claims
 @using CampusX.Enums
-@using CampusX.Services
-@using Microsoft.AspNetCore.Authorization
-@inject IWebHostEnvironment Environment
-@inject IAuthorizationService Authorization
 
 @{
     ViewData["Title"] = Model.Name;
-    var isDevelopment = Environment.IsDevelopment();
-    var canEdit = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) &&
-        userId == Model.SellerId &&
-        (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Student)).Succeeded;
-    var canModerate = isDevelopment &&
-        (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Admin)).Succeeded;
-    var canRemove = canModerate || (isDevelopment && canEdit);
-    var removalLabel = canModerate ? "Remove listing" : "Delete product";
+    var removalLabel = Model.CanModerate ? "Remove listing" : "Delete product";
 }
 
 <section class="product-details" aria-labelledby="product-title">
@@ -100,35 +88,35 @@
                 </dl>
             </div>
 
-            @if (canEdit || canRemove)
+            @if (Model.CanEdit || Model.CanRemove)
             {
                 <div class="product-details-actions">
-                    @if (canEdit)
+                    @if (Model.CanEdit)
                     {
                         <a asp-controller="Products" asp-action="Edit" asp-route-id="@Model.Id" class="product-detail-action product-detail-edit">Edit Product</a>
                     }
-                    @if (canEdit && Model.Status == ProductStatus.Available)
+                    @if (Model.CanEdit && Model.Status == ProductStatus.Available)
                     {
                         <form asp-controller="MyProducts" asp-action="MarkSold" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Mark this product as sold? It will be hidden from the marketplace.');">
                             <button type="submit" class="product-detail-action product-detail-edit">Mark as Sold</button>
                         </form>
                     }
-                    @if (canRemove)
+                    @if (Model.CanRemove)
                     {
                         <button type="button" class="product-detail-action product-detail-delete" onclick="document.getElementById('delete-product-@Model.Id').showModal()">@removalLabel</button>
                     }
                 </div>
             }
 
-            @if (canRemove)
+            @if (Model.CanRemove)
             {
                 <dialog class="sample-delete-dialog" id="delete-product-@Model.Id" aria-labelledby="delete-title-@Model.Id" aria-describedby="delete-name-@Model.Id delete-message-@Model.Id" dir="ltr">
                     <div class="sample-delete-dialog-body">
                         <span class="sample-delete-icon" aria-hidden="true">!</span>
                         <h2 id="delete-title-@Model.Id">@removalLabel?</h2>
                         <p class="sample-delete-product-name" id="delete-name-@Model.Id">@Model.Name</p>
-                        <p id="delete-message-@Model.Id">@(canModerate ? "This listing will be hidden from the marketplace." : "This product cannot be restored after deletion.")</p>
-                        <form asp-controller="ProductsDelete" asp-action="@(canModerate ? "Remove" : "Delete")" asp-route-id="@Model.Id" method="post" class="sample-delete-actions">
+                        <p id="delete-message-@Model.Id">@(Model.CanModerate ? "This listing will be hidden from the marketplace." : "This product cannot be restored after deletion.")</p>
+                        <form asp-controller="ProductsDelete" asp-action="@(Model.CanModerate ? "Remove" : "Delete")" asp-route-id="@Model.Id" method="post" class="sample-delete-actions">
                             <button type="button" class="sample-delete-cancel" autofocus onclick="document.getElementById('delete-product-@Model.Id').close()">Cancel</button>
                             <button type="submit" class="sample-delete-confirm">@removalLabel</button>
                         </form>

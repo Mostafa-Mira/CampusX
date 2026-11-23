@@ -6,6 +6,9 @@ public class ProductDetailsViewModel
 {
     public Guid Id { get; set; }
     public Guid SellerId { get; set; }
+    public bool CanEdit { get; set; }
+    public bool CanModerate { get; set; }
+    public bool CanRemove { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }

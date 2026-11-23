@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CampusX.Data.Repositories;
 
-public sealed class ProductRepository(CampusXDbContext context)
+public sealed class ProductRepository(CampusXDbContext context) : IProductRepository
 {
     public List<Product> ReadCatalog(IReadOnlyList<Expression<Func<Product, bool>>> filters,
         Func<IQueryable<Product>, IOrderedQueryable<Product>> order)

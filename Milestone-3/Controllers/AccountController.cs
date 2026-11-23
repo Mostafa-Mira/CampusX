@@ -10,13 +10,15 @@ namespace CampusX.Controllers;
 public partial class AccountController : Controller
 {
     private readonly ApplicationUserBL _applicationUserBL;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UniversityEmailVerificationBL _verification;
 
-    public AccountController(ApplicationUserBL applicationUserBL, SignInManager<ApplicationUser> signInManager,
-        UniversityEmailVerificationBL verification)
+    public AccountController(ApplicationUserBL applicationUserBL, UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager, UniversityEmailVerificationBL verification)
     {
         _applicationUserBL = applicationUserBL;
+        _userManager = userManager;
         _signInManager = signInManager;
         _verification = verification;
     }
@@ -33,7 +35,7 @@ public partial class AccountController : Controller
     [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginViewModel model, [FromServices] MarketplaceAccessHandler access)
+    public async Task<IActionResult> Login(LoginViewModel model, [FromServices] MarketplaceAccessEvaluator access)
     {
         model.ReturnUrl = LocalReturnUrl(model.ReturnUrl);
         ModelState.Remove(nameof(LoginViewModel.ReturnUrl));
@@ -97,43 +99,6 @@ public partial class AccountController : Controller
         return RedirectToAction(nameof(Login));
     }
 
-    [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly)]
-    [HttpGet]
-    public Task<IActionResult> PendingUniversityVerification() => VerificationPageAsync();
-
-    [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly)]
-    [HttpGet]
-    public Task<IActionResult> UniversityEmail() => VerificationPageAsync(allowConfirmed: true);
-
-    [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly)]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SendUniversityVerificationCode()
-    {
-        return await RunVerificationAsync(() => _verification.SendAsync(CurrentUserId));
-    }
-
-    [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly)]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> VerifyUniversityEmail(UniversityVerificationViewModel model)
-    {
-        // Invalid submissions count toward the persisted budget; never echo the submitted code.
-        var code = model.Code;
-        ModelState.Clear();
-        return await RunVerificationAsync(() => _verification.VerifyAsync(CurrentUserId, code), enterMarketplace: true);
-    }
-
-    [Authorize(Policy = MarketplaceAccessPolicies.AuthenticatedOnly)]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ChangeUniversityEmail(ChangeUniversityEmailViewModel model)
-    {
-        if (!ModelState.IsValid)
-            return await VerificationPageAsync(allowConfirmed: true);
-        return await RunVerificationAsync(() => _verification.ChangeEmailAsync(CurrentUserId, model.UniversityEmail));
-    }
-
     private Guid CurrentUserId => Guid.TryParse(
         User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : Guid.Empty;
 
@@ -144,39 +109,6 @@ public partial class AccountController : Controller
         if (status == MarketplaceAccessStatus.PendingVerification)
             return RedirectToAction(nameof(PendingUniversityVerification));
         return LocalReturnUrl(returnUrl) is { } local ? LocalRedirect(local) : RedirectToAction("Index", "Home");
-    }
-
-    private async Task<IActionResult> RunVerificationAsync(Func<Task<(bool Success, string Message)>> operation,
-        bool enterMarketplace = false)
-    {
-        try
-        {
-            var result = await operation();
-            if (result.Success)
-            {
-                TempData["AccountMessage"] = result.Message;
-                return enterMarketplace ? RedirectToAction("Index", "Home") : RedirectToAction(nameof(UniversityEmail));
-            }
-            ModelState.AddModelError(string.Empty, result.Message);
-        }
-        catch (UnauthorizedAccessException) { return DeniedVerification(); }
-        catch (Microsoft.Data.SqlClient.SqlException exception) when (exception.Number == 51020)
-        {
-            ModelState.AddModelError(string.Empty, "Verification is busy. Please try again.");
-        }
-        return await VerificationPageAsync(allowConfirmed: true);
-    }
-
-    private async Task<IActionResult> VerificationPageAsync(bool allowConfirmed = false)
-    {
-        try
-        {
-            var model = await _verification.GetPageAsync(CurrentUserId);
-            if (model.IsConfirmed && !allowConfirmed)
-                return RedirectToAction("Index", "Home");
-            return View("PendingUniversityVerification", model);
-        }
-        catch (UnauthorizedAccessException) { return DeniedVerification(); }
     }
 
     private IActionResult DeniedVerification()

@@ -30,6 +30,8 @@ namespace CampusX.Models
         public ICollection<ContactInquiry> Inquiries { get; set; } = new List<ContactInquiry>();
         public ICollection<ProductPromotion> Promotions { get; set; } = new List<ProductPromotion>();
 
+        public bool IsOwnedBy(Guid userId) => SellerId == userId;
+
         public void UpdateDetails(string name, string description, decimal price, string imageUrl, Guid categoryId)
         {
             Name = name;
