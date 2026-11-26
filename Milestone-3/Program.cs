@@ -1,14 +1,8 @@
 using CampusX.Data.DbContexts;
 using CampusX.Data.Development;
-using CampusX.Data.Repositories;
-using CampusX.Data.Seed;
-using CampusX.Models;
-using CampusX.Options;
 using CampusX.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.FileProviders;
-using System.Threading.RateLimiting;
 
 var provisionTester = args.Contains(DevelopmentTesterProvisioner.Command, StringComparer.Ordinal);
 var provisionSharedTester = args.Contains(DevelopmentTesterProvisioner.SharedCommand, StringComparer.Ordinal);
@@ -17,81 +11,23 @@ if (provisionTester && provisionSharedTester)
 
 var builder = WebApplication.CreateBuilder(args.Where(arg => arg != DevelopmentTesterProvisioner.Command &&
     arg != DevelopmentTesterProvisioner.SharedCommand).ToArray());
-var sharedTesterProfile = DevelopmentTesterAccess.IsSharedProfile(builder.Environment, builder.Configuration);
-var sharedTesterMode = DevelopmentTesterAccess.IsSharedMode(builder.Environment, builder.Configuration);
-var sharedTesterConnection = sharedTesterMode ? builder.Configuration.GetConnectionString("CampusXDb") : null;
-if (sharedTesterProfile && !provisionTester && !provisionSharedTester)
-{
-    if (!sharedTesterMode)
-        throw new InvalidOperationException("Enable the Team Test profile with the private DevelopmentTesterAccess:AllowSharedDatabase setting.");
-    if (!DevelopmentTesterAccess.UsesApprovedSharedDatabase(builder.Configuration, sharedTesterConnection))
-        throw new InvalidOperationException("Team tester mode requires the approved SQL target and shared startup mode. Network SQL must validate the server certificate.");
+var (sharedTesterMode, sharedTesterConnection) =
+    builder.ConfigureCampusXTeamTester(provisionTester || provisionSharedTester);
 
-    var fingerprint = DevelopmentTesterAccess.GetSharedClientFingerprint(builder.Configuration)
-        ?? throw new InvalidOperationException("Team tester mode requires the local client certificate SHA-256 fingerprint.");
-    builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(7148, listener => listener.UseHttps(https =>
-    {
-        https.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
-        https.ClientCertificateValidation = (certificate, _, _) => DevelopmentTesterAccess.MatchesSharedClient(certificate, fingerprint);
-    })));
-}
-
+// Service registration
 builder.Services.AddControllersWithViews();
-
-// تسجيل الـ AutoMapper هنا
 builder.Services.AddAutoMapper(typeof(Program));
-
 builder.Services.AddCampusXIdentity(builder.Configuration);
 
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.OnRejected = async (context, cancellationToken) =>
-    {
-        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var wait))
-            context.HttpContext.Response.Headers.RetryAfter =
-                ((int)Math.Ceiling(wait.TotalSeconds)).ToString(System.Globalization.CultureInfo.InvariantCulture);
-        await context.HttpContext.Response.WriteAsync("Too many recovery attempts. Wait a few minutes and try again.", cancellationToken);
-    };
-    foreach (var (policy, limit) in new[] { (PasswordRecoveryQueue.RequestPolicy, 10), (PasswordRecoveryQueue.ResetPolicy, 15) })
-    {
-        options.AddPolicy(policy, context => RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = limit,
-                Window = TimeSpan.FromMinutes(5),
-                QueueLimit = 0
-            }));
-    }
-});
-
+builder.Services.AddCampusXRecoveryRateLimits();
 builder.Services.AddCampusXAuthorization();
 
 builder.Services.AddDbContext<CampusXDbContext>(options =>
     options.UseSqlServer(sharedTesterConnection ?? builder.Configuration.GetConnectionString("CampusXDb")));
 
-builder.Services.AddScoped<ApplicationUserBL>();
-builder.Services.AddScoped<CategoryBL>();
-builder.Services.AddScoped<ProductBL>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<ReportBL>();
-builder.Services.AddScoped<AdminDashboardBL>();
-builder.Services.AddScoped<ContactInquiryBL>();
-builder.Services.Configure<EmailSmtpOptions>(builder.Configuration.GetSection(EmailSmtpOptions.SectionName));
-builder.Services.AddScoped<GmailUniversityEmailSender>();
-builder.Services.AddScoped<IUniversityEmailSender>(services => services.GetRequiredService<GmailUniversityEmailSender>());
-builder.Services.AddScoped<IPasswordRecoveryEmailSender>(services => services.GetRequiredService<GmailUniversityEmailSender>());
-builder.Services.AddScoped<PasswordRecoveryBL>();
-builder.Services.AddSingleton<PasswordRecoveryQueue>();
-builder.Services.AddHostedService(services => services.GetRequiredService<PasswordRecoveryQueue>());
-builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddScoped<UniversityEmailVerificationBL>();
+builder.Services.AddCampusXBusinessServices(builder.Configuration);
 
-builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
-builder.Services.AddScoped<IPaymentProvider, SimulatedPaymentProvider>();
-builder.Services.AddScoped<RevenueBL>();
-
+// Application startup
 var app = builder.Build();
 
 if (provisionTester || provisionSharedTester)
@@ -101,38 +37,9 @@ if (provisionTester || provisionSharedTester)
     return;
 }
 
-if (!sharedTesterMode && DevelopmentTesterAccess.IsEnabled(app.Environment, app.Configuration) &&
-    !DevelopmentTesterAccess.UsesLocalDatabase(app.Configuration))
-    throw new InvalidOperationException("Development tester access requires a local SQL Server connection.");
+app.InitializeCampusXDevelopmentDatabase(sharedTesterMode);
 
-// Shared team databases must be migrated separately and must not receive development seed data.
-var useSharedDatabase = app.Configuration.GetValue<bool>("DatabaseStartup:UseSharedDatabase");
-if (app.Environment.IsDevelopment() && !useSharedDatabase && !sharedTesterMode)
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<CampusXDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    try
-    {
-        db.Database.Migrate();
-        SampleProductSeeder.Seed(db);
-    }
-    catch (Exception exception)
-    {
-        logger.LogCritical(exception,
-            "CampusX database initialization failed. Check that SQL Server is running and the CampusXDb connection string is valid.");
-        throw new InvalidOperationException(
-            "CampusX could not initialize its Development database. Verify SQL Server and the CampusXDb connection string.",
-            exception);
-    }
-
-    DevelopmentTestDataSeeder.TrySeed(
-        db,
-        app.Configuration,
-        app.Environment,
-        scope.ServiceProvider.GetRequiredService<ILogger<Program>>());
-}
-
+// Request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -168,6 +75,5 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-// للتأكد من صحة الـ Mappings
 var mapper = app.Services.GetRequiredService<AutoMapper.IMapper>();
 mapper.ConfigurationProvider.AssertConfigurationIsValid();

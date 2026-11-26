@@ -15,6 +15,10 @@ Use singular PascalCase for entity classes (`Product`), plural DbSet/table names
 
 ## Database setup
 
+### Application startup
+
+`Program.cs` shows MVC and DbContext registration, the tester provisioning exit, the request pipeline, and the default route. `CampusXServiceCollectionExtensions.cs` groups repositories, business services, email, payment registration, and recovery rate limits. `CampusXDevelopmentStartupExtensions.cs` handles Team Tester hosting and Development database initialization. The Identity and authorization registration extensions remain the entry points for their own configuration.
+
 ### Identity foundation
 
 `ApplicationUser` now inherits from `IdentityUser<Guid>` and remains mapped to `ApplicationUsers`. `CampusXDbContext` uses Identity's user-only store: the existing `UserRole` enum remains the single source of Student/Admin roles, supplied through the CampusX claims factory. No parallel role membership tables or new roles are introduced. Existing MVC account pages/routes are retained; their backend uses `UserManager` and `SignInManager`. Existing cookies require a fresh login after the authentication-scheme cutover.
