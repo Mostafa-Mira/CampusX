@@ -1,0 +1,75 @@
+@model CampusX.ViewModel.PublicDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+    var availabilityPercent = Model.TotalProducts > 0
+        ? Math.Clamp((int)Math.Round(Model.AvailableProducts * 100d / Model.TotalProducts), 0, 100)
+        : 0;
+    var activeUserPercent = Model.TotalUsers > 0
+        ? Math.Clamp((int)Math.Round(Model.ActiveUsers * 100d / Model.TotalUsers), 0, 100)
+        : 0;
+    var stats = new[]
+    {
+        new { Label = "Total users", Value = Model.TotalUsers.ToString("N0"), Note = "Marketplace members", Tone = "users" },
+        new { Label = "Active users", Value = Model.ActiveUsers.ToString("N0"), Note = "Accounts in good standing", Tone = "active" },
+        new { Label = "Total products", Value = Model.TotalProducts.ToString("N0"), Note = "Current marketplace listings", Tone = "products" },
+        new { Label = "Available", Value = Model.AvailableProducts.ToString("N0"), Note = "Ready to find a new owner", Tone = "available" },
+        new { Label = "Sold", Value = Model.SoldProducts.ToString("N0"), Note = "Successfully exchanged", Tone = "sold" },
+        new { Label = "Pending reports", Value = Model.PendingReports.ToString("N0"), Note = "Waiting for review", Tone = "reports" }
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="dashboard-page">
+    <header class="dashboard-header">
+        <div>
+            <div class="dashboard-breadcrumb"><span>CampusX</span><span aria-hidden="true">/</span><span>Overview</span></div>
+            <h1 id="dashboard-title">Marketplace overview</h1>
+            <p>A clear view of the CampusX community and its marketplace activity.</p>
+        </div>
+        <a class="dashboard-browse" asp-controller="Home" asp-action="Index">
+            <span>Browse marketplace</span><span class="dashboard-browse-arrow" aria-hidden="true">↗</span>
+        </a>
+    </header>
+
+    <section class="dashboard-stats" aria-labelledby="dashboard-stats-title">
+        <div class="dashboard-section-heading">
+            <div><span class="dashboard-section-kicker">CAMPUSX AT A GLANCE</span><h2 id="dashboard-stats-title">Community statistics</h2></div>
+            <span class="dashboard-current"><span aria-hidden="true"></span> Live totals</span>
+        </div>
+        <div class="dashboard-stats-grid">
+            @foreach (var stat in stats)
+            {
+                <article class="dashboard-stat-card dashboard-stat-@stat.Tone">
+                    <div class="dashboard-stat-label"><span class="dashboard-stat-dot" aria-hidden="true"></span>@stat.Label</div>
+                    <strong>@stat.Value</strong>
+                    <small>@stat.Note</small>
+                </article>
+            }
+        </div>
+    </section>
+
+    <section class="dashboard-activity" aria-labelledby="dashboard-activity-title">
+        <div class="dashboard-activity-intro">
+            <span class="dashboard-section-kicker">MARKETPLACE HEALTH</span>
+            <h2 id="dashboard-activity-title">A community in motion</h2>
+            <p>Track the share of listings still available and accounts currently active.</p>
+            <div class="dashboard-activity-foot"><span class="dashboard-health-dot" aria-hidden="true"></span> Based on current marketplace totals</div>
+        </div>
+        <div class="dashboard-activity-metrics">
+            <article class="dashboard-progress-card">
+                <div class="dashboard-progress-top"><div><span class="dashboard-progress-label">Listings available</span><strong>@Model.AvailableProducts.ToString("N0") <small>of @Model.TotalProducts.ToString("N0")</small></strong></div><span class="dashboard-progress-percent">@availabilityPercent%</span></div>
+                <div class="dashboard-meter" role="progressbar" aria-label="Share of listings currently available" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@availabilityPercent"><span style="width: @availabilityPercent%"></span></div>
+            </article>
+            <article class="dashboard-progress-card dashboard-progress-users">
+                <div class="dashboard-progress-top"><div><span class="dashboard-progress-label">Active accounts</span><strong>@Model.ActiveUsers.ToString("N0") <small>of @Model.TotalUsers.ToString("N0")</small></strong></div><span class="dashboard-progress-percent">@activeUserPercent%</span></div>
+                <div class="dashboard-meter" role="progressbar" aria-label="Share of users with active accounts" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@activeUserPercent"><span style="width: @activeUserPercent%"></span></div>
+            </article>
+        </div>
+    </section>
+
+    <p class="dashboard-privacy-note"><span aria-hidden="true">i</span> This page shows community totals only. Personal account details and report contents remain private.</p>
+</div>

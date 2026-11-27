@@ -6,6 +6,7 @@
 @inject DevelopmentTesterAccess TesterAccess
 @{
     var isStudent = (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Student)).Succeeded;
+    var isAdmin = (await Authorization.AuthorizeAsync(User, MarketplaceAccessPolicies.Admin)).Succeeded;
     var isTester = isStudent && User.HasClaim(DevelopmentTesterAccess.ClaimType, DevelopmentTesterAccess.ClaimValue) &&
         await MarketplaceAccess.GetStatusAsync(User) == MarketplaceAccessStatus.DevelopmentTester;
     var accountStatus = "Signed in";
@@ -15,6 +16,8 @@
     var isHome = string.Equals(route["controller"]?.ToString(), "Home", StringComparison.OrdinalIgnoreCase) &&
         string.Equals(route["action"]?.ToString(), "Index", StringComparison.OrdinalIgnoreCase);
     var isMyProducts = string.Equals(route["controller"]?.ToString(), "MyProducts", StringComparison.OrdinalIgnoreCase);
+    var isPublicDashboard = string.Equals(route["controller"]?.ToString(), "Dashboard", StringComparison.OrdinalIgnoreCase);
+    var isAdminDashboard = string.Equals(route["controller"]?.ToString(), "Admin", StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -33,6 +36,7 @@
     </script>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/campus-ui.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="@(isHome ? "home-page" : null)">
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -86,6 +90,11 @@
                     <nav aria-label="Product navigation">
                         <ul class="sidebar-nav">
                             <li><a class="sidebar-link @(isHome ? "is-active" : null)" aria-current="@(isHome ? "page" : null)" asp-controller="Home" asp-action="Index"><span class="nav-icon" aria-hidden="true">▦</span> Browse Products</a></li>
+                            <li><a class="sidebar-link @(isPublicDashboard ? "is-active" : null)" aria-current="@(isPublicDashboard ? "page" : null)" asp-controller="Dashboard" asp-action="Index"><span class="nav-icon" aria-hidden="true">▤</span> Dashboard</a></li>
+                            @if (isAdmin)
+                            {
+                                <li><a class="sidebar-link @(isAdminDashboard ? "is-active" : null)" aria-current="@(isAdminDashboard ? "page" : null)" asp-controller="Admin" asp-action="Index"><span class="nav-icon" aria-hidden="true">▣</span> Admin Dashboard</a></li>
+                            }
                             @if (isStudent)
                             {
                                 <li><a class="sidebar-link @(isMyProducts ? "is-active" : null)" aria-current="@(isMyProducts ? "page" : null)" asp-controller="MyProducts" asp-action="Index"><span class="nav-icon" aria-hidden="true">▤</span> My Products</a></li>
